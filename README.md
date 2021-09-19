@@ -10,10 +10,10 @@ and be widely compatible with various Unix flavours.
 
 ## Dependencies
 
-For now, you must build from source (help making it available for package managers would be greatly appreciated.)  
+For now, you must build from source (help making it available in package managers would be greatly appreciated.)  
 It has been tested on Debian (Ubuntu) and macOS.
 
-Assuming you have X11 installed you just need to install [Motif](https://motif.ics.com/motif) (dev version) and a few minor dpeendencies.
+Assuming you have X11 installed you just need to install [Motif](https://motif.ics.com/motif) (dev version) and a few minor dependencies.
 
 **Debian/Ubuntu**:
 
@@ -21,7 +21,7 @@ Assuming you have X11 installed you just need to install [Motif](https://motif.i
 
 **Mac homebrew**:
 
-	brew install openmotif libxpm imagemagick
+	brew install openmotif libxpm
 
 ## Install
 
@@ -35,20 +35,8 @@ And run:
 
     classic-colors
 
-If you do not want to install in your path, but the build output `./bin/classic-colors`
-is a standalone executable which can be moved anywhere.
-
-### Building Motif
-
-If motif is not available in a package you will need to build it manually.
-
-Download source:
-
-	curl -L https://sourceforge.net/projects/motif/files/Motif%202.3.8%20Source%20Code/motif-2.3.8.tar.gz -O
-
-Add development dependencies:
-
-	sudo apt install libx11-dev libxt-dev libxext-dev libxft-dev bison flex
+If you do not want to install in your path, the build output `./bin/classic-colors`
+is a standalone executable which can be moved around.
 
 ## Platform notes
 
@@ -67,7 +55,17 @@ If you want the best experience on macOS increase this limit.
 
 [shm]: https://www.x.org/releases/X11R7.7/doc/xextproto/shm.html
 
+### Building Motif
 
+If motif is not available in a package you will need to build it manually.
+
+Download source:
+
+	curl -L https://sourceforge.net/projects/motif/files/Motif%202.3.8%20Source%20Code/motif-2.3.8.tar.gz -O
+
+Here the development dependencies on Debian:
+
+	sudo apt install libx11-dev libxt-dev libxext-dev libxft-dev bison flex
 
 ## LICENSE
 
