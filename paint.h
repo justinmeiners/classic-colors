@@ -68,6 +68,7 @@ TODO:
 - [x] undo checkpoints
 - [x] initial text blit is wrong!!
 - [x] don't bounds check square brush
+- [x] type in color RGB
 
 FUTURE: 
 
@@ -79,7 +80,6 @@ FUTURE:
 
 - polygon tool. 
 - polyogn select tool. (both need point in polygon tests.)
-- type in color RGB
 
 */
 

@@ -43,7 +43,7 @@ static void about_close_()
 
 static void cb_open_website_()
 {
-	const char* open_string = "xdg-open https://github.com/justinmeiners";
+	const char* open_string = "xdg-open https://github.com/justinmeiners/classic-colors";
     int result = system(open_string);
 	if (result != 0) {
 		result = system(open_string + 4);
