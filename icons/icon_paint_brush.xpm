@@ -1,0 +1,38 @@
+/* XPM */
+static char *icon_paint_brush[] = {
+/* columns rows colors chars-per-pixel */
+"24 24 8 1 ",
+"  c #AE7300",
+". c #C78F00",
+"X c #D19400",
+"o c #DEB845",
+"O c #888888",
+"+ c #BBBBBB",
+"@ c gray86",
+"# c white",
+/* pixels */
+"#Xo#####################",
+"#Xoo####################",
+"#Xooo###################",
+"XXXoooo#################",
+"XXXXooooooo#############",
+"XXXXooooooooooo#########",
+"XXXXXoooooooooooo#######",
+"XXXXXXXXXoooooooooo#####",
+"XXXXXXXXXXXXXXXoooo#####",
+" XXX.XXXXXXXXXXoooo#####",
+"#X.X.XXX.XXXXXXXooo#####",
+"# X...XXXXXXXXXXXooo####",
+"# XXXX.XXXXXXXXXXooo####",
+"#  XX.XX.XXXXXXXXooo####",
+"#   XX.XXX.XXXXXXooo####",
+"##  XXXXXXXXXXX.Xoo+++##",
+"##   XXXXX.X.XXXXo@@@+O+",
+"###   XXX.XXXXXXXo@@@O++",
+"####    XXXXXXXXX@@@O@@+",
+"#####         XX+@@O@@@+",
+"#######       ++++O@@@@O",
+"#############++++O+@@@O@",
+"#############+++O++++O@@",
+"##############+O++++O+@@"
+};

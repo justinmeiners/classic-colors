@@ -1,0 +1,37 @@
+/* XPM */
+static char *icon_paint_bucket[] = {
+/* columns rows colors chars-per-pixel */
+"24 24 7 1 ",
+"  c #444444",
+". c #415565",
+"X c #49637F",
+"o c #5185AE",
+"O c #BBBBBB",
+"+ c #82A3C5",
+"@ c white",
+/* pixels */
+"@@@@@@@@@@@@@@@@@@@@@@@@",
+"@@@@@@@@@@@@@@@@@@@@@@@@",
+"@@@@@@@@@+++++++++@@@@@@",
+"@@@@@@+++.........+++@@@",
+"@@@@++...............++@",
+"@@@+...................+",
+"@@@+....            ...+",
+"@OO+..               ..+",
+"OO@o++               ++X",
+"O@@ooo+++         +++XXX",
+"O@@oooooo+++++++++oooXXX",
+"O@@ooooooooooooooooooXXX",
+"O@@oooooooooo oooooooXXX",
+"OO@ooooooooOOO ooooooXXX",
+"@OOOoooOOOOOo oooooooXXX",
+"@@@OOOOOooooooooooooXXXX",
+"@@@ooooooooooooooooooXXX",
+"@@@oooooooooooooooooXXXX",
+"@@@ooooooooooooooooooXXX",
+"@@@oooooooooooooooooXXXX",
+"@@@oooooooooooooooXoXXXX",
+"@@@@oooooooooooooooXXXX@",
+"@@@@@ooooooooooXXXXXXX@@",
+"@@@@@@@@@XXXXXXXXX@@@@@@"
+};

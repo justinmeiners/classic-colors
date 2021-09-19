@@ -1,0 +1,34 @@
+/* XPM */
+static char *icon_eraser[] = {
+/* columns rows colors chars-per-pixel */
+"24 24 4 1 ",
+"  c #D46862",
+". c #FF8080",
+"X c #FF9A96",
+"o c white",
+/* pixels */
+"oooooooooooooooooooooooo",
+"oooooooooooooooooooooooo",
+"oooooooooooooooooooooooo",
+"oooooooooooooooooooooooo",
+"oooooooooX..............",
+"ooooooooXXX.............",
+"oooooooXXXX.............",
+"ooooooXXXXXX............",
+"oooooXXXXXXXX...........",
+"ooooXXXXXXXXX...........",
+"oooXXXXXXXXXXX..........",
+"ooXXXXXXXXXXXXX.........",
+"oXXXXXXXXXXXXXX.........",
+"oXXXXXXXXXXXXXXX........",
+"oXXXXXXXXXXXXXXXX.......",
+"ooXXXXXXXXXXXXXXX.......",
+"oooXXXXXXXXXXXXXX       ",
+"oooXXXXXXXXXXXXX        ",
+"ooooXXXXXXXXXXX         ",
+"oooooXXXXXXXXX          ",
+"oooooXXXXXXXX           ",
+"ooooooXXXXXX            ",
+"oooooooXXXX             ",
+"oooooooXXX              "
+};

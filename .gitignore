@@ -1,0 +1,5 @@
+classic-colors
+*.swp
+*.core
+*.o
+config.mk
