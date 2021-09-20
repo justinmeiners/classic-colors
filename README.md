@@ -40,18 +40,18 @@ is a standalone executable which can be moved around.
 
 ## Platform notes
 
-Classic colors attempts to use the [MIT SHM][shm] extension when available.
+Classic colors uses the [MIT SHM][shm] extension when available.
 This extension allows the display to refresh much faster.
 There is a fallback codepath when it is not available.
 It works well, it's just not as smooth.
-There is a configure option to disable it:
+
+SHM can be disabled at configuration time:
 
 	./configure --no-shm
 
 Unfortunatly, macOS does not allow very much SYSV shared memory to be used,
-and so it is likely if you resize the window very large it will exceed this limit and switch
-to the fallback codepath.
-If you want the best experience on macOS increase this limit.
+and so it is likely if you resize the window very large it will exceed this limit and switch to the fallback codepath.
+For the best experience on macOS you will need to increase this limit.
 
 [shm]: https://www.x.org/releases/X11R7.7/doc/xextproto/shm.html
 
