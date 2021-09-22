@@ -1,7 +1,6 @@
 include config.mk
 
 CC=gcc
-LDLIBS+=-lm
 SRC=$(wildcard *.c)
 OBJS=$(patsubst %.c,%.o,$(SRC))
 
@@ -15,6 +14,7 @@ FONTS_H=$(patsubst fonts/%.otf,fonts/%.h,$(FONTS))
 
 PREFIX := /usr/local
 
+# require gnumake
 icons/%.xpm: icons/%.png
 	convert $< $@
 
