@@ -13,7 +13,13 @@ and be widely compatible with various Unix flavours.
 For now, you must build from source (help making it available in package managers would be greatly appreciated.)  
 It has been tested on Debian (Ubuntu) and macOS.
 
-Assuming you have X11 installed you just need to install [Motif](https://motif.ics.com/motif) (dev version) and a few minor dependencies.
+**List**
+
+- gnumake
+- X11
+- [Motif](https://motif.ics.com/motif) (dev version)
+- Xt
+- Xpm
 
 **Debian/Ubuntu**:
 

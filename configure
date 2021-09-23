@@ -4,11 +4,14 @@ rm -f config.mk
 
 # TODO: detect mitshm
 
-
+# Linking order (LDLIBS) must be exact, otherwise you might get this error:
+# "X Error of failed request:  BadWindow (invalid Window parameter)
+#  Major opcode of failed request:  19 (X_DeleteProperty)"
 cat >> config.mk <<-EOF
-	CFLAGS += $(pkg-config --cflags x11 xext) $(pkg-config --cflags xt xpm)
-	LDFLAGS += $(pkg-config --libs-only-L x11 xext) $(pkg-config --libs-only-L xt xpm)
-	LDLIBS += $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm)
+	CFLAGS += -std=c99
+	CFLAGS += $(pkg-config --cflags x11 xext xt xpm) 
+	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm)
+	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm)
 	CFLAGS += -I/opt/X11/include
 EOF
 
