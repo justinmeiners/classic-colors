@@ -27,8 +27,13 @@
 #include "icons/icon_app.xpm"
 
 
-Widget about_dialog = NULL;
+PaintContext g_paint_ctx;
+Widget g_main_w = NULL;
 XtAppContext g_app = NULL;
+int g_ready = 0;
+
+
+Widget about_dialog = NULL;
 
 static void about_destroy_()
 {
@@ -107,7 +112,7 @@ static void cb_help_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     if (!about_dialog)
     {
-        about_dialog = setup_about_dialog_(main_w);
+        about_dialog = setup_about_dialog_(g_main_w);
     }
     XtManageChild(about_dialog);
 }
@@ -217,7 +222,7 @@ int main(int argc, char **argv)
 
     XtSetValues(top_wid, args, n);
 
-    main_w = XtCreateManagedWidget(
+    g_main_w = XtCreateManagedWidget(
             "main_window",
             xmMainWindowWidgetClass,
             top_wid,
@@ -226,7 +231,7 @@ int main(int argc, char **argv)
     );
 
 
-    Widget menu = ui_setup_menu(main_w);
+    Widget menu = ui_setup_menu(g_main_w);
 
     Arg pane_args[] = {
         { XmNorientation, XmHORIZONTAL },
@@ -234,22 +239,22 @@ int main(int argc, char **argv)
         { XmNspacing, 0 },
     };
 
-    Widget work_area_pane = XtCreateWidget("work_area_pane", xmPanedWidgetClass, main_w, pane_args, XtNumber(pane_args));
+    Widget work_area_pane = XtCreateWidget("work_area_pane", xmPanedWidgetClass, g_main_w, pane_args, XtNumber(pane_args));
 
     ui_setup_tool_area(work_area_pane);
     ui_setup_scroll_area(work_area_pane);
 
     XtManageChild(work_area_pane);
 
-    Widget command_area = ui_setup_command_area(main_w);
+    Widget command_area = ui_setup_command_area(g_main_w);
 
-    XtVaSetValues(main_w,
+    XtVaSetValues(g_main_w,
             XmNmenuBar, menu,
             XmNworkWindow, work_area_pane,
             XmNmessageWindow, command_area,
             NULL);
 
-    XtManageChild(main_w);
+    XtManageChild(g_main_w);
     XtRealizeWidget(top_wid);
 
     if (!paint_init(&g_paint_ctx))
@@ -274,8 +279,8 @@ int main(int argc, char **argv)
     g_ready = 1;
 
     ui_refresh_drawing(1);
-    ui_set_color(main_w, g_paint_ctx.fg_color, 1);
-    ui_set_color(main_w, g_paint_ctx.bg_color, 0);
+    ui_set_color(g_main_w, g_paint_ctx.fg_color, 1);
+    ui_set_color(g_main_w, g_paint_ctx.bg_color, 0);
     ui_refresh_tool();
     XtAppMainLoop(g_app);
 	return 0;

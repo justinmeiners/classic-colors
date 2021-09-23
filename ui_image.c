@@ -368,14 +368,14 @@ void ui_cb_image_menu(Widget widget, XtPointer a, XtPointer b)
         case 0:
             if (!flip_dialog)
             {
-                flip_dialog = setup_flip_dialog_(main_w);
+                flip_dialog = setup_flip_dialog_(g_main_w);
             }
             XtManageChild(flip_dialog);
             break;
         case 1:
             if (!stretch_dialog)
             {
-                stretch_dialog = setup_stretch_dialog_(main_w);
+                stretch_dialog = setup_stretch_dialog_(g_main_w);
             }
             XtManageChild(stretch_dialog);
             break;
@@ -386,7 +386,7 @@ void ui_cb_image_menu(Widget widget, XtPointer a, XtPointer b)
         case 3:
             if (!attributes_dialog)
             {
-                attributes_dialog = setup_attributes_dialog_(main_w);
+                attributes_dialog = setup_attributes_dialog_(g_main_w);
             }
 
             XtManageChild(attributes_dialog);

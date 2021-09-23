@@ -240,8 +240,8 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
         *continue_dispatch = 0;
         if (ctx->tool == TOOL_EYE_DROPPER)
         {
-            ui_set_color(main_w, ctx->fg_color, 1);
-            ui_set_color(main_w, ctx->bg_color, 0);
+            ui_set_color(g_main_w, ctx->fg_color, 1);
+            ui_set_color(g_main_w, ctx->bg_color, 0);
         }
         ui_refresh_drawing(0);
     }

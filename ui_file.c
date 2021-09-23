@@ -319,7 +319,7 @@ void ui_cb_file_menu(Widget w, XtPointer a, XtPointer b)
         case 1:
             if (!open_dialog)
             {
-                open_dialog = setup_open_dialog_(main_w);
+                open_dialog = setup_open_dialog_(g_main_w);
             }
 
             XtManageChild(open_dialog);
@@ -334,7 +334,7 @@ void ui_cb_file_menu(Widget w, XtPointer a, XtPointer b)
         case 3:
             if (!save_dialog)
             {
-                save_dialog = setup_save_dialog_(main_w);
+                save_dialog = setup_save_dialog_(g_main_w);
             }
             XtManageChild(save_dialog);
             break;

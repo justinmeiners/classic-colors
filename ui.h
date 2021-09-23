@@ -46,11 +46,10 @@
 
 // https://www.ibiblio.org/pub/X11/contrib/faqs/Motif-FAQ.html
 
-PaintContext g_paint_ctx;
-Widget main_w;
-
+extern PaintContext g_paint_ctx;
+extern Widget g_main_w;
 extern XtAppContext g_app;
-int g_ready;
+extern int g_ready;
 
 void ui_setup_file_menu(Widget menubar);
 void ui_setup_edit_menu(Widget menubar);

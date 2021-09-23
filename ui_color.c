@@ -151,7 +151,7 @@ static void color_picker_event_(Widget widget, XtPointer client_data, XtPointer 
 
         XColor xcolor;
         XParseColor(display, screen_colormap, color_name, &xcolor);
-        ui_set_color(main_w, xcolor_to_color(&xcolor), g_edit_fg);
+        ui_set_color(g_main_w, xcolor_to_color(&xcolor), g_edit_fg);
     }
     else if (cbs->reason == XmCR_CANCEL)
     {
@@ -414,7 +414,7 @@ static void color_clicked_(Widget widget, void* client_data, XEvent* event, Bool
         break;
     }
 
-    ui_set_color(main_w, color, fg);
+    ui_set_color(g_main_w, color, fg);
 }
 
 // Double click broken in Motif? https://bugzilla.redhat.com/show_bug.cgi?id=184143
@@ -429,8 +429,8 @@ static void color_swap_(Widget widget, XtPointer client_data, XtPointer call_dat
     PaintContext* ctx = &g_paint_ctx;
 
     uint32_t temp = ctx->bg_color;
-    ui_set_color(main_w, ctx->fg_color, 0);
-    ui_set_color(main_w, temp, 1);
+    ui_set_color(g_main_w, ctx->fg_color, 0);
+    ui_set_color(g_main_w, temp, 1);
 }
 
 static void color_change_activate_(Widget widget, XtPointer client_data, XtPointer call_data)
@@ -458,7 +458,7 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
 
      if (!g_color_picker)
      {
-        g_color_picker = setup_color_picker_(main_w, color);
+        g_color_picker = setup_color_picker_(g_main_w, color);
      }
 
      XtManageChild(g_color_picker);

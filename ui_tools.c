@@ -373,10 +373,10 @@ static void change_tool_(Widget widget, XtPointer client_data, XtPointer call_da
 
     if (tool->tool != TOOL_TEXT) ui_hide_text_dialog();
 
-    Widget options_list = XtNameToWidget(main_w, "*tool_options");
+    Widget options_list = XtNameToWidget(g_main_w, "*tool_options");
     update_tool_options_(options_list, tool->option_set);
 
-    Widget command_message = XtNameToWidget(main_w, "*command_message");
+    Widget command_message = XtNameToWidget(g_main_w, "*command_message");
     XmTextFieldSetString(command_message, tool->help);
     ui_refresh_drawing(0);
 }

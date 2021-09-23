@@ -227,7 +227,7 @@ Widget ui_setup_text_dialog(void)
 
     if (!g_dialog)
     {
-        g_dialog = setup_text_dialog_(main_w);
+        g_dialog = setup_text_dialog_(g_main_w);
     }
     Widget text = XtNameToWidget(g_dialog, "*text_area");
     wchar_t* current_text = ctx->layers[LAYER_OVERLAY].text;
