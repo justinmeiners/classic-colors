@@ -25,6 +25,10 @@ It has been tested on Debian (Ubuntu) and macOS.
 
 	sudo apt install libmotif-dev libxpm-dev
 
+**OpenBSD**
+
+    pkg_add motif gmake
+
 **Mac homebrew**:
 
 	brew install openmotif libxpm
