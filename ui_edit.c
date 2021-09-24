@@ -70,7 +70,7 @@ void ui_setup_edit_menu(Widget menubar)
     XmString cut_key = XmStringCreateLocalized("Ctrl+X");
 
     XmString copy_str = XmStringCreateLocalized("Copy");
-    XmString copy_key = XmStringCreateLocalized("Ctrl+c");
+    XmString copy_key = XmStringCreateLocalized("Ctrl+C");
 
     XmString paste_str = XmStringCreateLocalized("Paste");
     XmString paste_key = XmStringCreateLocalized("Ctrl+V");
