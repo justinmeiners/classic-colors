@@ -79,5 +79,5 @@ Here the development dependencies on Debian:
 
 ## LICENSE
 
-[GPL 3](https://www.gnu.org/licenses/gpl-3.0.txt)
+[GPL](LICENSE)
 
