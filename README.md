@@ -79,5 +79,5 @@ Here the development dependencies on Debian:
 
 ## LICENSE
 
-[GPL](LICENSE)
+[GPL](LICENSE.txt)
 
