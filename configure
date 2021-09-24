@@ -21,7 +21,7 @@ EOF
 
 X11_PATH_PREFIX=$(pkg-config --variable prefix x11)
 
-echo "CFLAGS += -D X11_PATH_PREFIX=\\\"${X11_PATH_PREFIX}\\\"" >> config.mk
+echo "CFLAGS += -D_POSIX_C_SOURCE=200809L -D X11_PATH_PREFIX=\\\"${X11_PATH_PREFIX}\\\"" >> config.mk
 
 DEBUG=false
 SHM=true
