@@ -206,7 +206,8 @@ int main(int argc, char **argv)
     n = 0;
     Pixmap icon_pixmap;
     Pixmap icon_mask;
-    XpmCreatePixmapFromData(XtDisplay(top_wid), RootWindowOfScreen(XtScreen(top_wid)), icon_app, &icon_pixmap, &icon_mask, NULL);
+    Screen* top_screen = XtScreen(top_wid);
+    XpmCreatePixmapFromData(XtDisplay(top_wid), RootWindowOfScreen(top_screen), icon_app, &icon_pixmap, &icon_mask, NULL);
     XtSetArg(args[n], XmNiconPixmap, icon_pixmap); ++n;
     XtSetArg(args[n], XmNiconMask, icon_mask); ++n;
 
@@ -217,8 +218,8 @@ int main(int argc, char **argv)
     XtSetArg(args[n], XmNbaseHeight, 16); ++n;
     XtSetArg(args[n], XmNwidthInc, 16); ++n;
     XtSetArg(args[n], XmNheightInc, 16); ++n;
-    XtSetArg(args[n], XmNwidth, 960); ++n;
-    XtSetArg(args[n], XmNheight, 720); ++n;
+    XtSetArg(args[n], XmNwidth, MAX(960, MIN(top_screen->width, 640))); ++n;
+    XtSetArg(args[n], XmNheight, MAX(720, MIN(top_screen->height, 480))); ++n;
 
     XtSetValues(top_wid, args, n);
 
