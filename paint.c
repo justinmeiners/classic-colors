@@ -373,16 +373,10 @@ void prepare_empty_overlay_(PaintContext* ctx)
     layer_set_text(l, NULL);
 }
 
-void paint_set_tool(PaintContext* ctx, PaintTool tool)
+static
+void settle_selection_layer_(PaintContext* ctx)
 {
-    if (tool != ctx->tool)
-    {
-        ctx->previous_tool = ctx->tool;
-        ctx->tool = tool;
-    }
-
-
-    if (ctx->active_layer == LAYER_OVERLAY && tool != TOOL_SELECT_RECTANGLE)
+    if (ctx->active_layer == LAYER_OVERLAY)
     {
         Layer* l = ctx->layers + LAYER_OVERLAY;
 
@@ -395,11 +389,20 @@ void paint_set_tool(PaintContext* ctx, PaintTool tool)
         bitmap_blit(l->bitmaps, b, 0, 0, l->x, l->y, layer_w(l), layer_h(l), l->blend);
         paint_undo_save(ctx, l->x, l->y, l->bitmaps->w, l->bitmaps->h);
 
-        ctx->active_layer = LAYER_MAIN;
-
-        l->blend = COLOR_BLEND_OVERLAY;
         layer_reset(l);
+        ctx->active_layer = LAYER_MAIN;
     }
+}
+
+void paint_set_tool(PaintContext* ctx, PaintTool tool)
+{
+    if (tool != ctx->tool)
+    {
+        ctx->previous_tool = ctx->tool;
+        ctx->tool = tool;
+    }
+
+    settle_selection_layer_(ctx);
 }
 
 void paint_tool_down(PaintContext* ctx, int x, int y, int button)
@@ -481,25 +484,21 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
                 const Layer* l = ctx->layers + ctx->active_layer;
                 if (!bitmap_rect_contains(layer_rect(l), x, y))
                 {
-                    bitmap_blit(l->bitmaps, b, 0, 0, l->x, l->y, l->bitmaps->w, l->bitmaps->h, l->blend);
-
-                    paint_undo_save(ctx, l->x, l->y, l->bitmaps->w, l->bitmaps->h);
+                    settle_selection_layer_(ctx);
                     prepare_empty_overlay_(ctx);
-                    ctx->active_layer = LAYER_MAIN;
                 }
             }
             else
             {
                 prepare_empty_overlay_(ctx);
             }
+
         }
     }
 
     ctx->tool_x = ctx->tool_min_x = ctx->tool_max_x = x;
     ctx->tool_y = ctx->tool_min_y = ctx->tool_max_y = y;
 }
-
-
 
 void paint_tool_move(PaintContext* ctx, int x, int y)
 {
