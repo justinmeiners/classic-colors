@@ -218,8 +218,27 @@ int main(int argc, char **argv)
     XtSetArg(args[n], XmNbaseHeight, 16); ++n;
     XtSetArg(args[n], XmNwidthInc, 16); ++n;
     XtSetArg(args[n], XmNheightInc, 16); ++n;
-    XtSetArg(args[n], XmNwidth, MAX(960, MIN(top_screen->width, 640))); ++n;
-    XtSetArg(args[n], XmNheight, MAX(720, MIN(top_screen->height, 480))); ++n;
+
+    int default_width, default_height;
+    if (top_screen->width < 1024)
+    {
+        default_width = 640;
+    }
+    else
+    {
+        default_width = 960;
+    }
+    if (top_screen->height < 768)
+    {
+        default_height = 480;
+    }
+    else
+    {
+        default_height = 720;
+    }
+
+    XtSetArg(args[n], XmNwidth, default_width); ++n;
+    XtSetArg(args[n], XmNheight, default_height); ++n;
 
     XtSetValues(top_wid, args, n);
 
