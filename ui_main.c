@@ -203,12 +203,14 @@ int main(int argc, char **argv)
             args,
             n);
 
+/* pledge doesn't support shm
 #ifdef __OpenBSD__
     if (pledge("stdio rpath wpath cpath tmppath proc exec unix", NULL) == -1)
     {
         fprintf(stderr, "failed to pledge\n");
     }
 #endif
+*/
 
     //icon
     n = 0;
