@@ -182,6 +182,13 @@ int main(int argc, char **argv)
 #if DEBUG_LOG
     run_tests();
 #endif
+
+#ifdef __OpenBSD__
+    if (pledge("stdio", "rpath", "wpath", "cpath", "tmppath", "proc", "exec", NULL) == -1)
+    {
+        fprintf(stderr, "failed to pledge\n");
+    }
+#endif
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
