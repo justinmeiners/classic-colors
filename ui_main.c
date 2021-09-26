@@ -183,13 +183,7 @@ int main(int argc, char **argv)
     run_tests();
 #endif
 
-#ifdef __OpenBSD__
-    if (pledge("stdio", "rpath", "wpath", "cpath", "tmppath", "proc", "exec", NULL) == -1)
-    {
-        fprintf(stderr, "failed to pledge\n");
-    }
-#endif
-    int n = 0;
+   int n = 0;
     Arg args[UI_ARGS_MAX];
 
     XtSetLanguageProc(NULL, NULL, NULL);
@@ -208,6 +202,13 @@ int main(int argc, char **argv)
             sessionShellWidgetClass,
             args,
             n);
+
+#ifdef __OpenBSD__
+    if (pledge("stdio rpath wpath cpath tmppath proc exec unix", NULL) == -1)
+    {
+        fprintf(stderr, "failed to pledge\n");
+    }
+#endif
 
     //icon
     n = 0;
