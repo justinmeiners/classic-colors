@@ -6,6 +6,8 @@ and be widely compatible with various Unix flavours.
 
 ![classic colors screenshot](screenshots/1.png)
 
+![classic colors openbsd screenshot](screenshots/2.png)
+
 [about-motif]:  https://en.wikipedia.org/wiki/Motif_(software)
 
 ## Dependencies
