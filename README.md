@@ -18,7 +18,7 @@ It has been tested on Debian (Ubuntu) and macOS.
 **List**
 
 - gnumake
-- X11
+- X11 (XQuartz on mac)
 - [Motif](https://motif.ics.com/motif) (dev version)
 - Xt
 - Xpm
@@ -34,6 +34,14 @@ It has been tested on Debian (Ubuntu) and macOS.
 **Mac homebrew**:
 
 	brew install openmotif libxpm
+
+You can install XQuartz through brew cask as well:
+
+	brew install xquartz
+
+Make sure you restart otherwise you will get an error:
+
+	Error: Can't open display.
 
 ## Install
 
