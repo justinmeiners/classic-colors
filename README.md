@@ -39,7 +39,7 @@ You can install XQuartz through brew cask as well:
 
 	brew install xquartz
 
-Make sure you restart otherwise you will get an error:
+If you just installed XQuartz for the first time make sure you restart otherwise you will get an error:
 
 	Error: Can't open display.
 
