@@ -15,14 +15,14 @@ pkg-config --exists --print-errors x11 xext xt
 
 # xp is for printing support and is not available in the debian build of motif.
 cat >> config.mk <<-EOF
-	CFLAGS += -std=c99 $(pkg-config --cflags x11 xext xt xpm xp)
-	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm xp)
-	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm xp)
+	CFLAGS += -std=c99 $(pkg-config --cflags x11 xext xt xpm) $(pkg-config --silence-errors --cflags xp)
+	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm) $(pkg-config --silence-errors --libs-only-L xp)
+	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm) $(pkg-config --silence-errors --libs-only-L xp)
 	CFLAGS += -I/opt/X11/include 
 EOF
 
 # Find motif
-if command -v brew &> /dev/null
+if command -v brew > /dev/null
 then
 	cat >> config.mk <<-EOF
 		CFLAGS += -I$(brew --prefix openmotif)/include
