@@ -20,12 +20,12 @@ cat >> config.mk <<-EOF
 EOF
 
 # Find motif
-if command -v brew
+if command -v brew &> /dev/null
 then
-cat >> config.mk <<-EOF
-  CFLAGS += -I$(brew --prefix openmotif)/include
-  LDFLAGS += -L$(brew --prefix openmotif)/lib
-EOF
+	cat >> config.mk <<-EOF
+		CFLAGS += -I$(brew --prefix openmotif)/include
+		LDFLAGS += -L$(brew --prefix openmotif)/lib
+	EOF
 fi
 
 X11_PATH_PREFIX=$(pkg-config --variable prefix x11)
