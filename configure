@@ -12,10 +12,12 @@ pkg-config --exists --print-errors x11 xext xt
 # Linking order (LDLIBS) must be exact, otherwise you might get this error:
 # "X Error of failed request:  BadWindow (invalid Window parameter)
 #  Major opcode of failed request:  19 (X_DeleteProperty)"
+
+# xp is for printing support and is not available in the debian build of motif.
 cat >> config.mk <<-EOF
-	CFLAGS += -std=c99 $(pkg-config --cflags x11 xext xt xpm)
-	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm)
-	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm)
+	CFLAGS += -std=c99 $(pkg-config --cflags x11 xext xt xpm xp)
+	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm xp)
+	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm xp)
 	CFLAGS += -I/opt/X11/include 
 EOF
 
