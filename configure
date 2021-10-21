@@ -4,16 +4,15 @@ rm -f config.mk
 
 # TODO: detect mitshm
 
-pkg-config --exists --print-errors x11 xext xt
-# Unfortuantly motif (xm) does not have a .pc file.
-# so we just have to guess common paths.
+pkg-config --exists --print-errors x11 xext xt xpm
 
+# libxp is required if motif was built with print support.
+# mac and Arx linux appear to need it.
+# Debian doesn't do printing, and in fact doesn't even have xp as a package. 
 
 # Linking order (LDLIBS) must be exact, otherwise you might get this error:
 # "X Error of failed request:  BadWindow (invalid Window parameter)
 #  Major opcode of failed request:  19 (X_DeleteProperty)"
-
-# xp is for printing support and is not available in the debian build of motif.
 cat >> config.mk <<-EOF
 	CFLAGS += -std=c99 $(pkg-config --cflags x11 xext xt xpm) $(pkg-config --silence-errors --cflags xp)
 	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm) $(pkg-config --silence-errors --libs-only-L xp)
@@ -21,7 +20,8 @@ cat >> config.mk <<-EOF
 	CFLAGS += -I/opt/X11/include 
 EOF
 
-# Find motif
+# Unfortuantly motif (xm) does not have a .pc file.
+# so we have to find it.
 if command -v brew > /dev/null
 then
 	cat >> config.mk <<-EOF
