@@ -22,6 +22,7 @@ It has been tested on Debian (Ubuntu) and macOS.
 - [Motif](https://motif.ics.com/motif) (dev version)
 - Xt
 - Xpm
+- Xp (only if motif on your platform is built with print support)
 
 **Debian/Ubuntu**:
 
@@ -29,7 +30,7 @@ It has been tested on Debian (Ubuntu) and macOS.
 
 **OpenBSD**
 
-    pkg_add motif gmake
+	pkg_add motif gmake
 
 **Mac homebrew**:
 
@@ -47,13 +48,13 @@ If you just installed XQuartz for the first time make sure you restart otherwise
 
 Now you are ready to build:
 
-    ./configure
-    make
-    make install
+	./configure
+	make
+	make install
     
 And run:
 
-    classic-colors
+	classic-colors
 
 If you do not want to install in your path, the build output `./bin/classic-colors`
 is a standalone executable which can be moved around.
