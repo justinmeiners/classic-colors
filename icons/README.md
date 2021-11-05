@@ -1,4 +1,5 @@
 To build icons you will need imagemagick or graphicsmagick:
+
 debian and ubuntu systems:
 
 	sudo apt install imagemagick
