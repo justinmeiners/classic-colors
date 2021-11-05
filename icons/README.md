@@ -12,4 +12,4 @@ homebrew:
 or
 	`brew install imagemagick`
 
-Icon size is 24 by 24 pixels, and all have a non-transparent white background.
+Icon size is 24 by 24 pixels, and all are both in png and xpm, and have a non-transparent white background.
