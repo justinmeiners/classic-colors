@@ -9,5 +9,7 @@ or
 
 homebrew:
 	`brew install graphicsmagick`
+or
+	`brew install imagemagick`
 
 Icon size is 24 by 24 pixels, and all have a non-transparent white background.
