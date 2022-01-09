@@ -181,7 +181,7 @@ void run_tests()
  These are only used  if the application defaults file is not installed.
  Since the goal is to make a portable binary, these should be considered defaults.
 */
-static String fallback_resources[] = {
+static String fallback_resources_[] = {
     "*.renderTable: rt",
     "*rt*fontType: FONT_IS_XFT",
     "*rt*fontName: Sans",
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
             0,
             &argc,
             argv,
-            fallback_resources,
+            fallback_resources_,
             sessionShellWidgetClass,
             args,
             n);

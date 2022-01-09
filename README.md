@@ -94,9 +94,9 @@ Here the development dependencies on Debian:
 
 	sudo apt install libx11-dev libxt-dev libxext-dev libxft-dev bison flex
 
-### Font and appearence
+### Font and XResource configuration
 
-See `etc/ClassicColors` for information.
+See `etc/ClassicColors`.
 
 ## LICENSE
 
