@@ -177,6 +177,18 @@ void run_tests()
 }
 #endif
 
+/* What's the deal with XFT fonts and resources?
+http://www.motifdeveloper.com/tips/tip2.html
+
+
+*/
+static String fallback_resources[] = {
+    "*.renderTable: rt",
+    "*rt*fontType: FONT_IS_XFT",
+    "*rt*fontName: Sans",
+    "*rt*fontSize: 10"
+};
+
 int main(int argc, char **argv)
 { 
 #if DEBUG_LOG
@@ -191,14 +203,15 @@ int main(int argc, char **argv)
     n = 0;
     XtSetArg(args[n], XmNtitle, "Classic Colors"); n++;
 
+    /* See man XtOpenApplication */
     Widget top_wid = XtOpenApplication(
             &g_app,
-            "Paint",
+            "ClassicColors",
             NULL,
             0,
             &argc,
             argv,
-            NULL,
+            fallback_resources,
             sessionShellWidgetClass,
             args,
             n);
@@ -212,7 +225,7 @@ int main(int argc, char **argv)
 #endif
 */
 
-    //icon
+    // icon
     n = 0;
     Pixmap icon_pixmap;
     Pixmap icon_mask;
@@ -220,6 +233,8 @@ int main(int argc, char **argv)
     XpmCreatePixmapFromData(XtDisplay(top_wid), RootWindowOfScreen(top_screen), icon_app, &icon_pixmap, &icon_mask, NULL);
     XtSetArg(args[n], XmNiconPixmap, icon_pixmap); ++n;
     XtSetArg(args[n], XmNiconMask, icon_mask); ++n;
+    XtSetArg(args[n], XmNfontType, XmFONT_IS_XFT); ++n;
+    XtSetArg(args[n], XmNfontName, "Sans"); ++n;
 
     // https://www.oreilly.com/openbook/motif/vol6a/Vol6a_html/ch16.html
     XtSetArg(args[n], XmNminWidth, 640); ++n;
