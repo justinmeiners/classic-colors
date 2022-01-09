@@ -155,7 +155,7 @@ enum {
 ToolOptionInfo g_shape_options[] = {
     { "stroke", SHAPE_STROKE },
     { "fill", SHAPE_FILL },
-    { "shape + stroke", SHAPE_STROKE | SHAPE_FILL  },
+    { "fill & stroke", SHAPE_STROKE | SHAPE_FILL  },
 };
 
 enum {
@@ -345,10 +345,9 @@ static void update_tool_options_(Widget option_list, ToolOption option_set)
     }
 
     n = 0;
+    XtSetArg(args[n], XmNitems, options); n++;
     XtSetArg(args[n], XmNvisibleItemCount, count); n++;
     XtSetArg(args[n], XmNitemCount, count); n++;
-    XtSetArg(args[n], XmNitems, options); n++;
- 
     XtSetValues(option_list, args, n);
 
     if (selected_item != -1)
@@ -505,6 +504,9 @@ Widget ui_setup_tool_area(Widget parent)
 
     n = 0;
     XtSetArg(args[n], XmNselectionPolicy, XmSINGLE_SELECT); n++;
+    // horizontal spacing.
+    // This was causing the option list to sometimes have an incorrect vertical size.
+    XtSetArg(args[n], XmNlistSizePolicy, XmCONSTANT); n++;
     Widget options_list = XmCreateList(tool_option_column, "tool_options", args, n);
     
     // called by mouse
