@@ -277,12 +277,8 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
         return 0;
     }
 
-    // 8 bits per component
-    if (info_list->bits_per_rgb != 8)
-    {
-        fprintf(stderr, "XVisual has invalid bits per rgb: %d\n", info_list->bits_per_rgb);
-        return 0;
-    }
+    // This check for bits_per_rgb does not provide the expected value.
+    // if (info_list->bits_per_rgb != 8)
 
     //  TrueColor and DirectColor are the only non-color mapped:
     //  https://tronche.com/gui/x/xlib/window/visual-types.html
