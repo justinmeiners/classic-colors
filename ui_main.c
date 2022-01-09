@@ -177,10 +177,9 @@ void run_tests()
 }
 #endif
 
-/* What's the deal with XFT fonts and resources?
-http://www.motifdeveloper.com/tips/tip2.html
-
-
+/*
+ These are only used  if the application defaults file is not installed.
+ Since the goal is to make a portable binary, these should be considered defaults.
 */
 static String fallback_resources[] = {
     "*.renderTable: rt",
@@ -233,8 +232,6 @@ int main(int argc, char **argv)
     XpmCreatePixmapFromData(XtDisplay(top_wid), RootWindowOfScreen(top_screen), icon_app, &icon_pixmap, &icon_mask, NULL);
     XtSetArg(args[n], XmNiconPixmap, icon_pixmap); ++n;
     XtSetArg(args[n], XmNiconMask, icon_mask); ++n;
-    XtSetArg(args[n], XmNfontType, XmFONT_IS_XFT); ++n;
-    XtSetArg(args[n], XmNfontName, "Sans"); ++n;
 
     // https://www.oreilly.com/openbook/motif/vol6a/Vol6a_html/ch16.html
     XtSetArg(args[n], XmNminWidth, 640); ++n;
