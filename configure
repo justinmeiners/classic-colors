@@ -4,23 +4,33 @@ rm -f config.mk
 
 # TODO: detect mitshm
 
-pkg-config --exists --print-errors x11 xext xt
-# Unfortuantly motif (xm) does not have a .pc file.
-# so we just have to guess common paths.
+pkg-config --exists --print-errors x11 xext xt xpm
+
+# libxp is required if motif was built with print support.
+# mac and Arx linux appear to need it.
+# Debian doesn't do printing, and in fact doesn't even have xp as a package. 
 
 # Linking order (LDLIBS) must be exact, otherwise you might get this error:
 # "X Error of failed request:  BadWindow (invalid Window parameter)
 #  Major opcode of failed request:  19 (X_DeleteProperty)"
 cat >> config.mk <<-EOF
-	CFLAGS += -std=c99
-	CFLAGS += $(pkg-config --cflags x11 xext xt xpm) 
-	LDFLAGS += -L/usr/local/lib $(pkg-config --libs-only-L x11 xext xt xpm)
-	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm)
-	CFLAGS += -I/opt/X11/include -I/usr/local/include
+	CFLAGS += -std=c99 $(pkg-config --cflags x11 xext xt xpm) $(pkg-config --silence-errors --cflags xp)
+	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm) $(pkg-config --silence-errors --libs-only-L xp)
+	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm) $(pkg-config --silence-errors --libs-only-L xp)
+	CFLAGS += -I/opt/X11/include 
 EOF
 
-X11_PATH_PREFIX=$(pkg-config --variable prefix x11)
+# Unfortuantly motif (xm) does not have a .pc file.
+# so we have to find it.
+if command -v brew > /dev/null
+then
+	cat >> config.mk <<-EOF
+		CFLAGS += -I$(brew --prefix openmotif)/include
+		LDFLAGS += -L$(brew --prefix openmotif)/lib
+	EOF
+fi
 
+X11_PATH_PREFIX=$(pkg-config --variable prefix x11)
 echo "CFLAGS += -D_POSIX_C_SOURCE=200809L -D X11_PATH_PREFIX=\\\"${X11_PATH_PREFIX}\\\"" >> config.mk
 
 DEBUG=false
