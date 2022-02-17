@@ -177,6 +177,17 @@ void run_tests()
 }
 #endif
 
+/*
+ These are only used  if the application defaults file is not installed.
+ Since the goal is to make a portable binary, these should be considered defaults.
+*/
+static String fallback_resources_[] = {
+    "*.renderTable: rt",
+    "*rt*fontType: FONT_IS_XFT",
+    "*rt*fontName: Sans",
+    "*rt*fontSize: 10"
+};
+
 int main(int argc, char **argv)
 { 
 #if DEBUG_LOG
@@ -191,14 +202,15 @@ int main(int argc, char **argv)
     n = 0;
     XtSetArg(args[n], XmNtitle, "Classic Colors"); n++;
 
+    /* See man XtOpenApplication */
     Widget top_wid = XtOpenApplication(
             &g_app,
-            "Paint",
+            "ClassicColors",
             NULL,
             0,
             &argc,
             argv,
-            NULL,
+            fallback_resources_,
             sessionShellWidgetClass,
             args,
             n);
@@ -212,7 +224,7 @@ int main(int argc, char **argv)
 #endif
 */
 
-    //icon
+    // icon
     n = 0;
     Pixmap icon_pixmap;
     Pixmap icon_mask;

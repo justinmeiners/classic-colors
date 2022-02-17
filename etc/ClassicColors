@@ -1,0 +1,16 @@
+! This is an application defaults file containing XResources commands.
+! Installing this file overrides the fallback resources in the application.
+! For example, if you don't like the anti-aliased font, you can install the file, but remove those lines.
+
+! Typical install locations include:
+! /etc/X11/app-defaults
+
+! This page can be helpful:
+! https://docs.prolifics.com/panther/html/cfg_html/motifdef.htm
+
+
+*.renderTable: rt
+*rt*fontType: FONT_IS_XFT
+*rt*fontName: Sans
+*rt*fontSize: 10"
+
