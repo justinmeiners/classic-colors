@@ -1,0 +1,126 @@
+Name:
+	Classic-Colors
+			
+Synopsis:
+						 
+	classic-colors [file]
+	 
+Description: 
+ 
+	Classic-Colors is a simple raster image editor written with the motif toolkit, It supports the file formats of:
+	 
+	.jpg  
+	.png  
+	.gif  
+	.tga  
+	.bmp  
+
+	It's main interface consits of (from top-to bottom): 
+	- A menubar
+	- 12 tools
+	- context sensitive options
+	- active colors + color palate
+	- status bar
+
+	the menubar consists of: 
+
+		File:  Standard file options  
+		Edit: Standard edit options  
+		View: 
+			> Zoom in +  [zoom in the file]  
+			 
+			>Zoom Out -  [zoom out of the file] 
+
+			> Reset  [reset shown file to oringal size] 
+
+		Image: Image alteration operations
+
+		Help:
+			>Help:
+			Bring up the HTML help page for Classic-Colors
+			 
+			>About 
+			Bring up the about Classic-Colors window.
+
+	The 12 buttons below are:
+	 
+		Brush:  
+			Draws a circlular brush without interuption, options are sizes mesured in pixels
+		 
+		Select(dashed square):
+			select area, options are:
+			>Ignore bg
+				ignore background
+			>everything
+				grab everything
+		 
+		Pencil:
+			draws a square brush without interuption, same mouse options as brush
+		 
+		Zoom(maginfying glass)  
+			use a zoom operation on the image
+		 
+		Erase(eraser):
+			inverse of brush
+		 
+		Text(A):
+			Draw text, options are
+			 
+				 Text type 
+				 Text size 
+				 Text allighment 
+			 
+		 
+		Sample(dropper):
+			Samples the color of the selected area
+		 
+		Line:
+			Draw a line, options are size
+		 
+
+		Spray:
+			Deposit visual noise constrained in a circle, options are size
+		 
+		Square draw:
+			draw a square, options are:
+			 
+				 Stroke 
+				 Fill 
+				 Stroke + Fill 
+			 
+		 
+		Fill(bucket):
+			fill selected area, options are:
+			 
+				 Neighbors 
+				 Everywhere 
+			 
+		 
+		Oval draw:
+			draw a oval, options are same as square draw
+
+	Below all of the above is a context sensitive list of options relating to the selected tool above
+
+	Farther below is color selection, the leftmost square is the color option of the brushes when the left mouse button is pressed down, the square right to it is the color of the brush when the right mouse button is pressed.
+	Farthest below is the status message.
+	 
+Source:
+	 
+	http://github.com/justinmeiners/classic-colors https://github.com/justinmeiners/classic-colors 
+	 
+	See also:
+	 
+	 https://en.wikipedia.org/wiki/Pinta_(software) Pinta  
+	 https://en.wikipedia.org/wiki/Microsoft_Paint Microsoft paint  
+	 https://en.wikipedia.org/wiki/MyPaint My Paint  
+	 https://en.wikipedia.org/wiki/KolourPaint KolourPaint  
+	 https://en.wikipedia.org/wiki/MtPaint MtPaint 
+Acknowledgments:
+	Classic-Colors was written by Justin Meiners : https://github.com/justinmeiners
+	Man page written by  https://github.com/MagnetarRocket
+
+Notes on behavior(bugs):  
+ 
+	Upon any changes, classic-colors will not state in any way it has unsaved data 
+	.xpm not supported
+	non-animated gif only supported
