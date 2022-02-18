@@ -120,6 +120,9 @@ static Widget setup_open_dialog_(Widget parent)
     XnFileSelectionBoxAddFilter(dialog, "*.jpg");
     XnFileSelectionBoxAddFilter(dialog, "*.gif");
 
+    Widget detailButton = XnFileSelectionBoxGetChild(dialog, XnFSB_DETAIL_TOGGLE_BUTTON);
+    XtSetSensitive(detailButton, False);
+
     const char* path = paint_file_path(&g_paint_ctx);
     if (path)
     {
@@ -318,8 +321,6 @@ void ui_cb_file_menu(Widget w, XtPointer a, XtPointer b)
 
     }
 }
-
-
 
 void ui_setup_file_menu(Widget menubar)
 {
