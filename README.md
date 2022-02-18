@@ -1,4 +1,5 @@
-# Classic Colors
+
+# Classic Colors ![icon](icons/icon_app.png)
 
 Classic Colors is a simple and efficient paint program for Unix systems, inspired by MS Paint (Windows 95-98 version).
 It is built on the time-tested [Motif][about-motif] UI library, so it should last for a long time
