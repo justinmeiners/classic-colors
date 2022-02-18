@@ -25,6 +25,19 @@ Widget open_dialog;
 Widget save_dialog;
 char* potential_save_path = NULL;
 
+static char* copy_paint_dirname_(void)
+{
+    if (paint_file_path(&g_paint_ctx))
+    {
+        char* copy = strndup(paint_file_path(&g_paint_ctx), OS_PATH_MAX);
+        return dirname(copy);
+    }
+    else
+    {
+       return NULL;
+    }
+}
+
 void ui_new(Widget widget)
 {
     PaintContext* ctx = &g_paint_ctx;
@@ -64,6 +77,8 @@ static void cb_open_file_(Widget widget, XtPointer client_data, XtPointer call_d
     {
         XtUnmanageChild(widget);
         XtDestroyWidget(widget);
+
+        ui_refresh_title();
         ui_refresh_drawing(1);
     }
 
@@ -85,29 +100,11 @@ static void cb_open_destroy_(Widget widget, XtPointer client_data, XtPointer cal
     open_dialog = NULL;
 }
 
-static char* paint_dirname_()
-{
-    if (paint_file_path(&g_paint_ctx))
-    {
-        char* copy = strndup(paint_file_path(&g_paint_ctx), OS_PATH_MAX);
-        return dirname(copy);
-    }
-    else
-    {
-       return NULL;
-    }
-}
-
 static Widget setup_open_dialog_(Widget parent)
 {
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
-    char* dir = paint_dirname_();
-    if (dir)
-    {
-        XtSetArg(args[n], XnNdirectory, dir); ++n;
-    }
     XtSetArg(args[n], XnNshowHidden, False); ++n;
     XtSetArg(args[n], XmNresizePolicy, XmRESIZE_NONE); ++n;
     XtSetArg(args[n], XnNfsbType, FILEDIALOG_OPEN); n++;
@@ -123,11 +120,14 @@ static Widget setup_open_dialog_(Widget parent)
     XnFileSelectionBoxAddFilter(dialog, "*.jpg");
     XnFileSelectionBoxAddFilter(dialog, "*.gif");
 
-    if (dir)
+    const char* path = paint_file_path(&g_paint_ctx);
+    if (path)
     {
-        free(dir);
+        char* copy = strndup(path, OS_PATH_MAX);
+        XtVaSetValues(dialog, XnNdirectory, dirname(copy), NULL);
+        free(copy);
     }
-
+ 
     return dialog;
 }
 
@@ -164,6 +164,7 @@ static void confirm_save_ok_(Widget widget, XtPointer client_data, XtPointer cal
     if (finalize_save_(potential_save_path, save_dialog))
     {
         XtDestroyWidget(save_dialog);
+        ui_refresh_title();
     }
 
     if (potential_save_path) XtFree(potential_save_path);
@@ -197,6 +198,7 @@ static void cb_save_file_(Widget widget, XtPointer client_data, XtPointer call_d
             // success. close.
             XtUnmanageChild(widget);
             XtDestroyWidget(widget);
+            ui_refresh_title();
         }
     }
     else
@@ -253,7 +255,7 @@ static Widget setup_save_dialog_(Widget parent)
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
-    char* path = paint_file_path(&g_paint_ctx);
+    const char* path = paint_file_path(&g_paint_ctx);
     if (path)
     {
         XtSetArg(args[n], XnNselectedPath, path); ++n;
