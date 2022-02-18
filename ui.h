@@ -56,21 +56,20 @@ void ui_setup_edit_menu(Widget menubar);
 void ui_setup_image_menu(Widget menubar);
 void ui_setup_view_menu(Widget menubar);
 
-
 Widget ui_setup_tool_area(Widget parent);
 Widget ui_setup_command_area(Widget parent);
 
 void ui_refresh_drawing(int clear);
 void ui_drawing_cleanup(void);
+
 Widget ui_setup_text_dialog(void);
 void ui_hide_text_dialog(void);
 
-
 void ui_set_color(Widget window, uint32_t color, int fg);
-
 Widget ui_setup_scroll_area(Widget parent);
 
 void ui_refresh_tool(void);
+void ui_refresh_title(void);
 XtAppContext ui_app();
 
 

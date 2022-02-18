@@ -16,6 +16,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <libgen.h>
 
 #include "ui.h"
 
@@ -123,6 +125,23 @@ XtAppContext ui_app()
     return g_app;
 }
 
+void ui_refresh_title(void)
+{
+    char title[OS_PATH_MAX];
+    const char* path = paint_file_path(&g_paint_ctx);
+    if (path)
+    {
+        char* copy = strndup(path, OS_PATH_MAX);
+        snprintf(title, OS_PATH_MAX, "%s - Classic Colors", basename(copy));
+        free(copy);
+    }
+    else
+    {
+        snprintf(title, OS_PATH_MAX, "Classic Colors");
+    }
+    XtVaSetValues(XtParent(g_main_w), XmNtitle, title, NULL);
+}
+
 Widget ui_setup_menu(Widget parent)
 {
     int n = 0;
@@ -134,14 +153,12 @@ Widget ui_setup_menu(Widget parent)
     XmString image_str = XmStringCreateLocalized("Image");
     XmString help_str = XmStringCreateLocalized("Help");
 
-
     Widget menubar = XmVaCreateSimpleMenuBar(parent, "menubar",
             XmVaCASCADEBUTTON, file_str, 'F',
             XmVaCASCADEBUTTON, edit_str, 'E',
             XmVaCASCADEBUTTON, view_str, 'V',
             XmVaCASCADEBUTTON, image_str, 'I',
             NULL);
-
 
     XmStringFree(help_str);
     XmStringFree(image_str);
@@ -182,14 +199,10 @@ int main(int argc, char **argv)
 #if DEBUG_LOG
     run_tests();
 #endif
-
-   int n = 0;
-    Arg args[UI_ARGS_MAX];
-
     XtSetLanguageProc(NULL, NULL, NULL);
 
-    n = 0;
-    XtSetArg(args[n], XmNtitle, "Classic Colors"); n++;
+    int n = 0;
+    Arg args[UI_ARGS_MAX];
 
     Widget top_wid = XtOpenApplication(
             &g_app,
@@ -200,8 +213,8 @@ int main(int argc, char **argv)
             argv,
             NULL,
             sessionShellWidgetClass,
-            args,
-            n);
+            NULL,
+            0);
 
 /* pledge doesn't support shm
 #ifdef __OpenBSD__
@@ -213,7 +226,6 @@ int main(int argc, char **argv)
 */
 
     //icon
-    n = 0;
     Pixmap icon_pixmap;
     Pixmap icon_mask;
     Screen* top_screen = XtScreen(top_wid);
@@ -305,6 +317,8 @@ int main(int argc, char **argv)
             exit(1);
         }
     }
+
+    ui_refresh_title();
 
     g_ready = 1;
 
