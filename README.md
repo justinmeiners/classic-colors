@@ -16,7 +16,7 @@ and be widely compatible with various Unix flavours.
 ## Dependencies
 
 For now, you must build from source (help making it available in package managers would be greatly appreciated.)  
-It has been tested on Debian (Ubuntu) and macOS.
+It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 **List**
 
