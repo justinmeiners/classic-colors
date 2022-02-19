@@ -35,9 +35,14 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 	pkg_add motif gmake
 
-**Mac homebrew**:
+**Mac**:
+If you have homebrew, install the following packages:
 
 	brew install openmotif libxpm
+
+If you have Pkgsrc, use the following command:
+
+	sudo pkgin install motif
 
 You can install XQuartz through brew cask as well:
 
