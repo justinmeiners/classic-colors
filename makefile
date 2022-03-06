@@ -32,6 +32,7 @@ bin/classic-colors: $(XPMS) $(FONTS_H) $(OBJS)
 install: bin/classic-colors
 	install -d "$(PREFIX)/bin/"
 	install -m 755 bin/classic-colors "$(PREFIX)/bin/classic-colors"
+	install -m 0644 -t "${PREFIX}/share/classic-colors/help" help/*
 
 .PHONY: clean
 clean:

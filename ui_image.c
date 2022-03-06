@@ -359,7 +359,7 @@ static Widget setup_attributes_dialog_(Widget parent)
 }
 
 
-void ui_cb_image_menu(Widget widget, XtPointer a, XtPointer b)
+static void image_menu_cb_(Widget widget, XtPointer a, XtPointer b)
 {
     size_t item = (size_t)a;
 
@@ -415,8 +415,7 @@ void ui_setup_image_menu(Widget menubar)
     XmString clear_key = XmStringCreateLocalized("Del");
     XmString crop_str = XmStringCreateLocalized("Crop Image");
 
-
-    XmVaCreateSimplePulldownMenu(menubar, "image_menu", 3, ui_cb_image_menu,
+    XmVaCreateSimplePulldownMenu(menubar, "image_menu", 3, image_menu_cb_,
             XmVaPUSHBUTTON, flip_str, 'F', NULL, NULL,
             XmVaPUSHBUTTON, stretch_str, 'S', NULL, NULL,
             XmVaPUSHBUTTON, invert_str, 'I', "Ctrl<Key>i", invert_key,
