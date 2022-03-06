@@ -27,11 +27,7 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 	sudo apt install libmotif-dev libxpm-dev
 
-**OpenBSD**
-
-	pkg_add motif gmake
-
-**Mac (homebrew)**:
+**macOS (homebrew)**:
 
 Install [XQuartz][xquartz] either from the link, or homebrew cask:
 
@@ -48,6 +44,10 @@ Now install motif:
 **pkgsrc**
 
 	sudo pkgin install motif
+
+**OpenBSD**
+
+	pkg_add motif gmake
 
 [xquartz]: https://www.xquartz.org/
 
