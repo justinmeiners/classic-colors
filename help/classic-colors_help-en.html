@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>
+		Classic-Colors
+		</title>
+	</head>
+	<body bgcolor="grey">
+		<center>
+			<font color="white">
+			<H1> Classic-Colors </H1>
+			By : <a href= "http://justinmeiners.github.io/"> Justin Meiners </a>
+			<br><br>
+
+		<table border="1" bgcolor="LightSeaGreen"> 
+			<tbody>
+				<td bgcolor="lightgrey">
+					<font color="black">
+					<h3> Synopsis </h3>
+						<p>
+							classic-colors [file]
+						</p>
+                        <hr>
+					<h3> Description </h3>
+						<p>
+							Classic-Colors is a simple raster image editor writen in the motif toolkit, It supports the file formats of:
+							<ul>
+							<li> .jpg </li>
+							<li> .png </li>
+							<li> .gif </li>
+							<li> .tga </li>
+							<li> .gif </li>
+							
+							</ul>
+							The main interface as shown:<br>
+							<img src="Classic-Colors_mainWindow.png" alt="Main window" width="974"	height="">
+							<br><br>
+							Of the visible widgets, they will be discussed top to down, starting with the menubar:<br>
+							<img src="Classic-Colors_Toolbar.png" alt="Toolbar" width="960" height="" >
+							<br>
+						
+							<ul>
+								<li> <h5><u>F</u>ile</h5> Standard file options 
+								</li>
+								<li> <h5><u>E</u>dit</h5> Standard edit options 
+								</li>
+								<li> <h5><u>V</u>iew</h5> 
+									<ul>
+										<li>
+											<h5>Zoom in +</h5> [zoom in the file] <br>
+										</li>
+										<li>
+											<h5>Zoom Out -</h5> [zoom out of the file]<br>
+										</li>
+										<li>
+												<h5>Reset</h5> [reset shown file to oringal size]<br>
+										</li>
+									</ul> 
+								</li>
+								<li> <h5><u>I</u>mage</h5>  
+								Image alteration operations:
+                                <ul>
+                                    <li>
+                                        <h5>Flip</h5> [flip image]
+                                    </li>
+                                    <li>
+                                        <h5>Stretch<h5> [stretch image]
+                                    </li>
+                                    <li>
+                                        <h5>Invert<h5> [invert Image]
+                                    </li>
+                                    <li>
+                                        <h5>Attributes</h5> [alter attributes of the image]
+                                    </li>
+                                    <li>
+                                        <h5>Clear</h5> [clear the current image to a blank]
+                                    </li>
+                                </ul>
+								</li>
+
+								<li> <h5><u>H</u>elp</h5>  
+								<ul>
+									<!-- <li><h5>Help</h5>
+									Bring up the HTML help page for Classic-Colors
+									</li> -->
+									<li><h5>About</h5>
+									Bring up the about Classic-Colors window.
+									</li>
+								</ul> 
+								
+								</li>
+							</ul>
+							<br>
+						 The 12 buttons below are:<br>
+						 <img src="ClassicPaint-tools.png" alt="Tools">
+						 <br> in order of left to right:
+							<ul>
+								<li> <h5>Brush</h5> 
+									Draws a circlular brush without interuption, options are sizes mesured in pixels
+								</li>
+								<li> <h5>Select(dashed square)</h5> 
+									Select area, options are:
+									<ul>
+										<li>
+											<h5>ignore bg</h5>
+											ignore background
+										</li>
+										<li>
+											<h5>everything</h5>
+											grab everything
+										</li>
+									</ul>
+								</li>
+								<li> <h5>Pencil</h5> 
+									Draws a square brush without interuption, same mouse options as brush
+								</li>
+								<li> <h5>Zoom(maginfying glass)</h5> 
+									Use a zoom operation on the image
+								</li>
+
+								<li> <h5>Erase(eraser)</h5> 
+									Inverse of brush
+								</li>
+								<li> <h5>Text(A)</h5> 
+									Draw text, options are
+									<ul>
+										<li>Text type</li>
+										<li>Text size</li>
+										<li>Text allighment</li>
+									</ul>
+								</li>
+								<li> <h5>Sample(dropper)</h5> 
+									Samples the color of the selected area
+								</li>
+								<li> <h5>Line</h5> 
+									Draw a line, options are size
+								</li>
+
+								<li> <h5>Spray</h5> 
+									Deposit visual noise constrained in a circle, options are size
+								</li>
+								<li> <h5>Square draw</h5> 
+									Draw a square, options are:
+									<ul>
+										<li>Stroke</li>
+										<li>Fill</li>
+										<li>Stroke + Fill</li>
+									</ul>
+								</li>
+								<li> <h5>Fill(bucket)</h5> 
+									Fill selected area, options are:
+									<ul>
+										<li>Neighbors</li>
+										<li>Everywhere</li>
+									</ul>
+								</li>
+								<li> <h5>Oval draw</h5> 
+									Draw a oval, options are same as square draw
+								</li>
+							</ul>
+							<br>
+							below that is a context sensitive list of options relating to the selected tool above:<br>
+							<img src="Classic-Colors_ContexOptions.png" alt="Context options"><br><br>
+							<br>
+							<img src="ClassicPaint-Colors.png" alt="Color and status" width="684"><br>
+                                Below the above is the color selection, there are two large squares and 42 smaller squares; the leftmost large square is the color for the left mouse button, the square to the right to it is the color that will be ignored for background operations, it is trigered by the right mouse button <br>
+                            <br>Farthest below is the status message
+                            
+                            <hr>
+
+
+						</p>
+					<h3> Source </h3>
+						<p>
+							<a href="http://github.com/justinmeiners/classic-colors">https://github.com/justinmeiners/classic-colors</a>
+						</p>
+                        <hr>
+					<h3> See also </h3>
+						<p>
+						<a href="https://en.wikipedia.org/wiki/Pinta_(software)">Pinta</a><br>
+						<a href="https://en.wikipedia.org/wiki/Microsoft_Paint">Microsoft paint</a><br>
+						<a href="https://en.wikipedia.org/wiki/MyPaint">My Paint</a><br>
+						<a href="https://en.wikipedia.org/wiki/KolourPaint">KolourPaint</a><br>
+						<a href="https://en.wikipedia.org/wiki/MtPaint">MtPaint</a>
+						</p>
+                        <hr>
+					<h3> Bugs </h3>
+						<p>
+						Upon any changes, classic-colors will not state in any way it has unsaved data<br>
+						non-animated gif only supported<br>
+						.xpm not supported
+						</p>
+					</font>
+				</td>
+			
+			</tbody>
+		</table>
+		Help page writen by <a href="https://github.com/MagnetarRocket">MagnetarRocket</a>
+        ©Justin Meiners 2021
+		</center>
+	</body>
+</html>

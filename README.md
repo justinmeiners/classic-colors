@@ -1,4 +1,5 @@
-# Classic Colors
+
+# Classic Colors ![icon](icons/icon_app.png)
 
 Classic Colors is a simple and efficient paint program for Unix systems, inspired by MS Paint (Windows 95-98 version).
 It is built on the time-tested [Motif][about-motif] UI library, so it should last for a long time
@@ -8,12 +9,14 @@ and be widely compatible with various Unix flavours.
 
 ![classic colors openbsd screenshot](screenshots/2.png)
 
+![classic colors Mac OS screenshot](screenshots/3.png)
+
 [about-motif]:  https://en.wikipedia.org/wiki/Motif_(software)
 
 ## Dependencies
 
 For now, you must build from source (help making it available in package managers would be greatly appreciated.)  
-It has been tested on Debian (Ubuntu) and macOS.
+It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 **List**
 
@@ -32,9 +35,14 @@ It has been tested on Debian (Ubuntu) and macOS.
 
 	pkg_add motif gmake
 
-**Mac homebrew**:
+**Mac**:
+If you have homebrew, install the following packages:
 
 	brew install openmotif libxpm
+
+If you have Pkgsrc, use the following command:
+
+	sudo pkgin install motif
 
 You can install XQuartz through brew cask as well:
 
