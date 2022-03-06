@@ -7,10 +7,6 @@ and be widely compatible with various Unix flavours.
 
 ![classic colors screenshot](screenshots/1.png)
 
-![classic colors openbsd screenshot](screenshots/2.png)
-
-![classic colors Mac OS screenshot](screenshots/3.png)
-
 [about-motif]:  https://en.wikipedia.org/wiki/Motif_(software)
 
 ## Dependencies
@@ -35,22 +31,25 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 	pkg_add motif gmake
 
-**Mac**:
-If you have homebrew, install the following packages:
+**Mac (homebrew)**:
 
-	brew install openmotif libxpm
-
-If you have Pkgsrc, use the following command:
-
-	sudo pkgin install motif
-
-You can install XQuartz through brew cask as well:
+Install [XQuartz][xquartz] either from the link, or homebrew cask:
 
 	brew install xquartz
 
 If you just installed XQuartz for the first time make sure you restart otherwise you will get an error:
 
 	Error: Can't open display.
+
+Now install motif:
+
+	brew install openmotif libxpm
+
+**pkgsrc**
+
+	sudo pkgin install motif
+
+[xquartz]: https://www.xquartz.org/
 
 ## Install
 
@@ -99,4 +98,10 @@ Here the development dependencies on Debian:
 ## LICENSE
 
 [GPL](LICENSE.txt)
+
+## Screenshots
+
+![classic colors openbsd screenshot](screenshots/2.png)
+
+![classic colors Mac OS screenshot](screenshots/3.png)
 
