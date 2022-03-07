@@ -119,6 +119,8 @@ static Widget setup_open_dialog_(Widget parent)
     XnFileSelectionBoxAddFilter(dialog, "*.png");
     XnFileSelectionBoxAddFilter(dialog, "*.jpg");
     XnFileSelectionBoxAddFilter(dialog, "*.gif");
+    XnFileSelectionBoxAddFilter(dialog, "*.bmp");
+    XnFileSelectionBoxAddFilter(dialog, "*.tga");
 
     Widget detailButton = XnFileSelectionBoxGetChild(dialog, XnFSB_DETAIL_TOGGLE_BUTTON);
     XtSetSensitive(detailButton, False);
@@ -278,6 +280,11 @@ static Widget setup_save_dialog_(Widget parent)
     XnFileSelectionBoxAddFilter(dialog, "*.png");
     XnFileSelectionBoxAddFilter(dialog, "*.jpg");
     XnFileSelectionBoxAddFilter(dialog, "*.gif");
+    XnFileSelectionBoxAddFilter(dialog, "*.bmp");
+    XnFileSelectionBoxAddFilter(dialog, "*.tga");
+    
+    Widget detailButton = XnFileSelectionBoxGetChild(dialog, XnFSB_DETAIL_TOGGLE_BUTTON);
+    XtSetSensitive(detailButton, False);
 
     return dialog;
 }
