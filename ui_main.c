@@ -48,15 +48,25 @@ static void about_close_()
     about_dialog = NULL;
 }
 
+static int open_url_(const char* url)
+{
+    char command[OS_PATH_MAX];
+    snprintf(command, OS_PATH_MAX, "xdg-open %s &", url);
+
+    if (system(command) != 0)
+    {
+        if (DEBUG_LOG) fprintf(stderr, "xdg-open failed..");
+        if (system(command + 4) != 0) 
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 static void cb_open_website_()
 {
-	const char* open_string = "xdg-open https://github.com/justinmeiners/classic-colors";
-    int result = system(open_string);
-	if (result != 0) {
-		result = system(open_string + 4);
-	}
-	if (DEBUG_LOG) printf("system exit: %d\n", result);
-
+    open_url_("https://github.com/justinmeiners/classic-colors");
     XtDestroyWidget(about_dialog);
     about_dialog = NULL;
 }
@@ -82,12 +92,10 @@ Thanks to Sean Barrett for stb libs: http://nothings.org", XmSTRING_DEFAULT_CHAR
     XmString website = XmStringCreateLocalized("Website");
     XmString close = XmStringCreateLocalized("Close");
 
-
     n = 0;
     XtSetArg(args[n], XmNdeleteResponse, XmDESTROY); ++n;
     Widget dialog =  XmCreateDialogShell(parent, "about", args, n);
     XmStringFree(title);
-
 
     n = 0;
     XtSetArg(args[n], XmNmessageString, about_string); ++n;
@@ -110,13 +118,27 @@ Thanks to Sean Barrett for stb libs: http://nothings.org", XmSTRING_DEFAULT_CHAR
     return dialog;
 }
 
-static void cb_help_(Widget widget, XtPointer client_data, XtPointer call_data)
+static void cb_help_menu_(Widget widget, XtPointer a, XtPointer call_data)
 {
-    if (!about_dialog)
+    size_t item = (size_t)a;
+
+    switch (item) 
     {
-        about_dialog = setup_about_dialog_(g_main_w);
+        case 0:
+        {
+            open_url_("/usr/local/share/classic-colors/help/classic-colors_help-en.html");
+            break;
+        }
+        case 1:
+        {
+            if (!about_dialog)
+            {
+                about_dialog = setup_about_dialog_(g_main_w);
+            }
+            XtManageChild(about_dialog);
+            break;
+        }
     }
-    XtManageChild(about_dialog);
 }
 
 
@@ -144,8 +166,6 @@ void ui_refresh_title(void)
 
 Widget ui_setup_menu(Widget parent)
 {
-    int n = 0;
-    Arg args[UI_ARGS_MAX];
 
     XmString file_str = XmStringCreateLocalized("File");
     XmString edit_str = XmStringCreateLocalized("Edit");
@@ -171,16 +191,24 @@ Widget ui_setup_menu(Widget parent)
     ui_setup_image_menu(menubar);
     ui_setup_view_menu(menubar);
 
-    Widget help = XtVaCreateManagedWidget( "Help",
-                  xmCascadeButtonWidgetClass, menubar,
-                  XmNmnemonic, 'H',
-                  NULL);
+    XmString manual_str = XmStringCreateLocalized("Manual");
+    XmString about_str = XmStringCreateLocalized("About");
 
-    XtAddCallback(help, XmNactivateCallback, cb_help_, NULL);
+    Widget help_button = XmCreateCascadeButton(menubar, "Help", NULL, 0);
+    XtVaSetValues(menubar, XmNmenuHelpWidget, help_button, NULL);
 
-    XtSetArg(args[n], XmNmenuHelpWidget, help); ++n;
-    XtSetValues(menubar,args,n);
+    Widget help_bar = XmVaCreateSimplePulldownMenu(menubar, "help_menu",
+            -1, cb_help_menu_,
+            XmVaPUSHBUTTON, manual_str, 'M', NULL, NULL,
+            XmVaPUSHBUTTON, about_str, 'A', NULL, NULL,
+            NULL);
 
+    XtVaSetValues(help_button, XmNsubMenuId, help_bar, NULL);
+
+    XmStringFree(manual_str);
+    XmStringFree(about_str);
+
+    XtManageChild(help_button);
     XtManageChild(menubar);
 
     return menubar;

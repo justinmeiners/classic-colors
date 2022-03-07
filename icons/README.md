@@ -1,15 +1,25 @@
-To build icons you will need imagemagick or graphicsmagick:
+# Icons
 
-debian and ubuntu systems:
+Icon size is 24 by 24 pixels, and all are both in png and xpm, and have a non-transparent white background.
+
+To build icons you will need imagemagick OR graphicsmagick:
+
+## Imagemagick
+
+**Debian/Ubuntu**
 
 	sudo apt install imagemagick
-or
+
+**macOS (homebrew)**
+
+	brew install imagemagick
+
+## Graphicsmagick
+
+**Debian/Ubuntu**
 
 	sudo apt install graphicsmagick graphicsmagick-imagemagick-compat 
 
-homebrew:
-	`brew install graphicsmagick`
-or
-	`brew install imagemagick`
+**macOS (homebrew)**
 
-Icon size is 24 by 24 pixels, and all are both in png and xpm, and have a non-transparent white background.
+	brew install graphicsmagick
