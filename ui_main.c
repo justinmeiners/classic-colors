@@ -218,7 +218,7 @@ Widget ui_setup_menu(Widget parent)
 void run_tests()
 {
     test_text_wordwrap();
-    test_bitmap_blending();
+    color_blending_test();
 }
 #endif
 
