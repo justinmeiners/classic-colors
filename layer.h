@@ -49,7 +49,8 @@ typedef struct
     wchar_t* text;
 } Layer;
 
-static inline BitmapRect layer_rect(const Layer* layer)
+static inline
+BitmapRect layer_rect(const Layer* layer)
 {
     BitmapRect r = {
         layer->x, layer->y, layer->bitmaps->w, layer->bitmaps->h
@@ -57,13 +58,15 @@ static inline BitmapRect layer_rect(const Layer* layer)
     return r;
 }
 
-static inline int layer_w(const Layer* layer)
+static inline
+int layer_w(const Layer* layer)
 {
     if (!layer->bitmaps) return 0;
     return layer->bitmaps->w;
 }
 
-static inline int layer_h(const Layer* layer)
+static inline
+int layer_h(const Layer* layer)
 {
     if (!layer->bitmaps) return 0;
     return layer->bitmaps->h;

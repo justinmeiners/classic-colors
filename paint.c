@@ -49,7 +49,6 @@ int paint_font_count()
     return sizeof(font_table) / sizeof(FontEntry);
 }
 
-
 void paint_undo_save(PaintContext* ctx, int x, int y, int w, int h)
 {
     BitmapRect r = {
@@ -267,6 +266,10 @@ int paint_init(PaintContext* ctx)
     ctx->bg_color = COLOR_WHITE;
     ctx->view_bg_color = COLOR_GRAY;
 
+    ctx->polygon_points = NULL;
+    ctx->polygon_count = 0;
+    ctx->polygon_capacity = 0;
+
     ctx->select_mode = SELECT_KEEP_BG;
     ctx->request_tool_timer = 0;
 
@@ -291,7 +294,6 @@ void paint_flip(PaintContext* ctx, int horiz)
     layer_flip(l, horiz);
     paint_undo_save_full(ctx);
 }
-
 
 void paint_rotate_90(PaintContext* ctx, int repeat)
 {
@@ -394,15 +396,63 @@ void settle_selection_layer_(PaintContext* ctx)
     }
 }
 
+static
+void settle_polygon_(PaintContext* ctx)
+{
+    if (ctx->polygon_count > 0)
+    {
+        Bitmap* b = ctx->layers[LAYER_MAIN].bitmaps;
+        bitmap_stroke_polygon(
+                b, 
+                ctx->polygon_points,
+                ctx->polygon_count, 
+                1,
+                ctx->line_width,
+                fg_color_(ctx)
+                );
+
+        BitmapRect r = bitmap_rect_around_points(ctx->polygon_points, ctx->polygon_count);
+        r = bitmap_rect_pad(r, ctx->line_width, ctx->line_width);
+        paint_undo_save(ctx, r.x, r.y, r.w, r.h);
+
+        free(ctx->polygon_points);
+        ctx->polygon_capacity = 0;
+        ctx->polygon_count = 0;
+        ctx->polygon_points = NULL;
+
+        prepare_empty_overlay_(ctx);
+    }
+}
+
 void paint_set_tool(PaintContext* ctx, PaintTool tool)
 {
+    if (ctx->tool == TOOL_POLYGON)
+    {
+        settle_polygon_(ctx);
+    }
+
     if (tool != ctx->tool)
     {
         ctx->previous_tool = ctx->tool;
         ctx->tool = tool;
     }
-
     settle_selection_layer_(ctx);
+}
+
+static
+void redraw_polygon_(PaintContext* ctx)
+{
+    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+    bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
+
+    bitmap_stroke_polygon(
+            overlay->bitmaps,
+            ctx->polygon_points,
+            ctx->polygon_count,
+            0,
+            ctx->line_width,
+            fg_color_(ctx)
+            );
 }
 
 void paint_tool_down(PaintContext* ctx, int x, int y, int button)
@@ -455,11 +505,35 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
         case TOOL_LINE:
         case TOOL_RECTANGLE:
         case TOOL_ELLIPSE:
-        case TOOL_POLYGON:
             prepare_empty_overlay_(ctx);
             ctx->line_x = x;
             ctx->line_y = y;
             break;
+        case TOOL_POLYGON:
+        {
+            prepare_empty_overlay_(ctx);
+
+            int k = ctx->polygon_count;
+
+            if (k + 1 > ctx->polygon_capacity)
+            {
+                int n = MAX(16, ctx->polygon_capacity * 2);
+                ctx->polygon_points = realloc(ctx->polygon_points, sizeof(int) * n);
+                ctx->polygon_capacity = n;
+            }
+
+            int points_to_add = (k == 0) ? 2 : 1;
+            for (int i = 0; i < points_to_add; ++i)
+            {
+                ctx->polygon_points[k].x = x;
+                ctx->polygon_points[k].y = y;
+                ++k;
+            }
+
+            ctx->polygon_count = k;
+            redraw_polygon_(ctx);
+            break;
+        }
         case TOOL_EYE_DROPPER:
         {
             uint32_t c = bitmap_get(b, x, y, ctx->bg_color);
@@ -581,6 +655,14 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
             }
             break;
         }
+        case TOOL_POLYGON:
+        {
+            int k = ctx->polygon_count - 1;
+            ctx->polygon_points[k].x = x;
+            ctx->polygon_points[k].y = y;
+            redraw_polygon_(ctx);
+            break;
+        }
         case TOOL_EYE_DROPPER:
         {
             uint32_t c = bitmap_get(b, x, y, ctx->bg_color);
@@ -643,33 +725,21 @@ static
 void push_undo_stroke_(PaintContext* ctx, int radius)
 {
     const Layer* l = ctx->layers + LAYER_MAIN;
+    BitmapRect r = bitmap_rect_extrema(
+            ctx->tool_min_x, ctx->tool_min_y,
+            ctx->tool_max_x, ctx->tool_max_y
+            );
 
-    int min_x = ctx->tool_min_x - radius;
-    int min_y = ctx->tool_min_y - radius;
-
-    int max_x = ctx->tool_max_x + radius;
-    int max_y = ctx->tool_max_y + radius;
-
-    min_x = MAX(min_x, 0);
-    min_y = MAX(min_y, 0);
-
-    max_x = MIN(max_x, l->bitmaps->w - 1);
-    max_y = MIN(max_y, l->bitmaps->h - 1);
-
-    int w = (max_x - min_x) + 1;
-    int h = (max_y - min_y) + 1;
-
-    paint_undo_save(ctx, min_x, min_y, w, h);
+    r = bitmap_rect_pad(r, radius, radius);
+    bitmap_rect_intersect(r, layer_rect(l), &r);
+    paint_undo_save(ctx, r.x, r.y, r.w, r.h);
 }
-
 
 static
 void min_to_line_(PaintContext* ctx, int x, int y)
 {
-    ctx->tool_min_x = MIN(ctx->line_x, x);
-    ctx->tool_min_y = MIN(ctx->line_y, y);
-    ctx->tool_max_x = MAX(ctx->line_x, x);
-    ctx->tool_max_y = MAX(ctx->line_y, y);
+    extend_interval(x, &ctx->tool_min_x, &ctx->tool_max_x);
+    extend_interval(y, &ctx->tool_min_y, &ctx->tool_max_y);
 }
 
 void paint_tool_up(PaintContext* ctx, int x, int y, int button)
@@ -764,6 +834,11 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             }
             push_undo_stroke_(ctx, ctx->line_width);
             break;
+        case TOOL_POLYGON:
+        {
+            redraw_polygon_(ctx);
+            break;
+        }
         case TOOL_TEXT:
             if (ctx->active_layer == LAYER_MAIN)
             {
@@ -818,7 +893,6 @@ int paint_h(const PaintContext* ctx)
     const Layer* l = ctx->layers + LAYER_MAIN;
     return l->bitmaps->h;
 }
-
 
 void paint_crop(PaintContext* ctx)
 {

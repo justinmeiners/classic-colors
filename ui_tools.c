@@ -36,6 +36,7 @@
 #include "icons/icon_ellipse.xpm"
 #include "icons/icon_airbrush.xpm"
 #include "icons/icon_text.xpm"
+#include "icons/icon_polygon_select.xpm"
 
 typedef enum
 {
@@ -100,9 +101,6 @@ static int get_option_(const PaintContext* ctx, ToolOption option)
 
     return -1;
 }
-
-
-
 
 Widget g_tool_radio = NULL;
 
@@ -319,8 +317,14 @@ ToolInfo g_tools[] = {
         "Ellipse",
         icon_ellipse,
         "Click and drag to draw an ellipse from start to end. Hold shift to snap to circle."
+    },
+    { 
+        TOOL_POLYGON,
+        OPTION_SHAPE_FLAGS,
+        "Polygon",
+        icon_polygon_select,
+        "HOW TO DRAW."
     }
-
 };
 
 const int g_tools_count = sizeof(g_tools) / sizeof(ToolInfo);

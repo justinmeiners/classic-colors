@@ -1,9 +1,9 @@
 /* XPM */
-static char *PolySelect[] = {
+static char *icon_polygon_select2[] = {
 /* columns rows colors chars-per-pixel */
-"24 24 2 1",
+"24 24 2 1 ",
 "  c black",
-". c gray100",
+". c white",
 /* pixels */
 ".............. .........",
 ".............  .  ......",

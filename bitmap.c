@@ -20,6 +20,32 @@
 
 #define SWAP(x_, y_, T) do { T SWAP = x_; x_ = y_; y_ = SWAP; } while (0)
 
+BitmapRect bitmap_rect_around_points(BitmapCoord* points, int n)
+{
+    assert(n > 0);
+    int min_x = points[0].x;
+    int min_y = points[0].y;
+    int max_x = min_x;
+    int max_y = min_y;
+
+    for (int i = 1; i < n; ++i)
+    {
+        extend_interval(points[i].x, &min_x, &max_x);
+        extend_interval(points[i].y, &min_y, &max_y);
+    }
+    return bitmap_rect_extrema(min_x, min_y, max_x, max_y);
+}
+
+BitmapRect bitmap_rect_pad(BitmapRect r, int pad_w, int pad_h)
+{
+    r.x -= pad_w;
+    r.y -= pad_h;
+
+    r.w += 2 * pad_w;
+    r.h += 2 * pad_h;
+    return r;
+}
+
 void bitmap_clear(Bitmap* b, uint32_t color)
 {
     int N = b->w * b->h;
@@ -44,7 +70,6 @@ Bitmap* bitmap_create(int w, int h)
     b->data = malloc(w * h * sizeof(uint32_t));
     return b;
 }
-
 
 void bitmap_destroy(Bitmap* b)
 {
@@ -514,8 +539,41 @@ void bitmap_fill_ellipse(Bitmap* dst, int x1, int y1, int x2, int y2, uint32_t c
 #undef PUT
 }
 
+void bitmap_stroke_polygon(
+        Bitmap* dst,
+        BitmapCoord* points,
+        int n,
+        int closed,
+        int width,
+        uint32_t color
+        )
+{
+    for (int i = 0; i < n - 1; ++i)
+    {
+        bitmap_interp_square(
+                dst,
+                points[i].x,
+                points[i].y,
+                points[i + 1].x,
+                points[i + 1].y,
+                width,
+                color
+        );
+    }
 
-
+    if (closed && n > 2)
+    {
+        bitmap_interp_square(
+                dst,
+                points[n - 1].x,
+                points[n - 1].y,
+                points[0].x,
+                points[0].y,
+                width,
+                color
+        );
+    }
+}
 
 void bitmap_stroke_rect(Bitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
 {
@@ -524,13 +582,6 @@ void bitmap_stroke_rect(Bitmap* b, int x1, int y1, int x2, int y2, int width, ui
     bitmap_interp_square(b, x2, y2, x1, y2, width, color);
     bitmap_interp_square(b, x1, y2, x1, y1, width, color);
 }
-
-
-typedef struct
-{
-    int x;
-    int y;
-} FloodFillCoord;
 
 BitmapRect bitmap_flood_fill(Bitmap* b, int sx, int sy, uint32_t new_color)
 {
@@ -555,9 +606,9 @@ BitmapRect bitmap_flood_fill(Bitmap* b, int sx, int sy, uint32_t new_color)
     }
 
     // every pixel will be visited at most once 
-    FloodFillCoord* queue = malloc(sizeof(FloodFillCoord) *  b->w * b->h);
-    FloodFillCoord* front = queue;
-    FloodFillCoord* back = front;
+    BitmapCoord* queue = malloc(sizeof(BitmapCoord) * b->w * b->h);
+    BitmapCoord* front = queue;
+    BitmapCoord* back = front;
 
     back->x = sx;
     back->y = sy;    
@@ -774,6 +825,7 @@ Bitmap* bitmap_transform(const Bitmap* src, Bitmap* dst, Transform A, uint32_t b
     for (int i = 1; i < 4; ++i)
     {
         Vec2 out_corner = transform_apply(A, corners[i]);
+
         min.x = MIN(out_corner.x, min.x);
         min.y = MIN(out_corner.y, min.y);
 

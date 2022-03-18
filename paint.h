@@ -178,6 +178,10 @@ typedef struct
     size_t paste_board_size;
     unsigned char* paste_board_data;
 
+    BitmapCoord* polygon_points;
+    int polygon_count;
+    int polygon_capacity;
+
     UndoQueue undo;
 
     char open_file_path[OS_PATH_MAX];

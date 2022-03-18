@@ -24,114 +24,13 @@
 #include <math.h>
 
 #include "transform.h"
+#include "color.h"
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
-static inline
-int sign_of_int(int x) {
-    return (x > 0) - (x < 0);
-}
-
-typedef enum {
-    // ignore destination and replace
-    COLOR_BLEND_REPLACE,
-    // alpha blend assuming destination is opaque
-    COLOR_BLEND_OVERLAY,
-    // full alpha composite "over" operation
-    COLOR_BLEND_FULL,
-    // invert colors in destination
-    COLOR_BLEND_INVERT,
-} ColorBlend;
-
-
-#define COLOR_WHITE 0xFFFFFFFF
-#define COLOR_BLACK 0x000000FF
-#define COLOR_GRAY 0x888888FF
-#define COLOR_RED   0xFF0000FF
-#define COLOR_GREEN 0x00FF00FF
-#define COLOR_BLUE  0x0000FFFF
-#define COLOR_CLEAR 0x00000000
-
-static inline
-int color_component(uint32_t c, int i)
+typedef struct
 {
-    return (c >> (24 - 8 * i)) & 0xFF;
-}
-
-static inline
-uint32_t color_pack(int comps[])
-{
-    uint32_t color = 0;
-    for (int i = 0; i < 4; ++i)
-        color |= ((((uint32_t)comps[i]) & 0xFF) << (24 - 8 * i));
-    return color;
-}
-static inline
-void color_unpack(uint32_t c, int comps[])
-{
-    for (int i = 0; i < 4; ++i)
-        comps[i] = color_component(c, i);
-}
-
-// http://x86asm.net/articles/fixed-point-arithmetic-and-tricks/
-// https://en.wikipedia.org/wiki/Alpha_compositing
-
-static inline
-void color_blend_full(int* src_comps, int* dst_comps)
-{
-    // I would really like a nice integer math one, but couldn't figure out a good way.
-    // This is currently only used for text, so shouldn't be a problem.
-    float a1 = (float)src_comps[3] / 255.0;
-    float a2 = (float)dst_comps[3] / 255.0;
-
-    float alpha = a1 + a2 - a1 * a2;
-    if (alpha > 0.0)
-    {
-        for (int i = 0; i < 3; ++i)
-        {
-            float c1 = src_comps[i] / 255.0;
-            float c2 = dst_comps[i] / 255.0;
-            
-            float num = a1 * c1 + a2 * c2 * (1.0 - a1);
-            float x = num / alpha;
-            dst_comps[i] = round(x * 255.0);
-        }
-    }
-    dst_comps[3] = round(alpha * 255.0);
-}
-
-
-// Use overlay when destination of alpha is 255.
-
-// alpha: a + 1(1 - a) = 1
-// color: (c_1 a_1 + c_2 ( 1 - a_1)) / 1
-//      =  c_1 a_1 + c_2 - c_2 a_1
-//      = c_2 + a_1(c_1 - c_2)
-static inline
-void color_blend_overlay(int* src_comps, int* dst_comps)
-{
-    // a * src + (1 -a) * dst
-    for (int i = 0; i < 3; ++i)
-    {
-        dst_comps[i] += ((src_comps[i] - dst_comps[i]) * src_comps[3]) >> 8;
-    }
-    dst_comps[3] = 0xFF;
-}
-
-static inline
-void color_blend_invert(int* src_comps, int* dst_comps)
-{
-    // invert colors
-    for (int i = 0; i < 3; ++i) src_comps[i] = 255 - dst_comps[i];
-    for (int i = 0; i < 3; ++i)
-    {
-        dst_comps[i] = ((src_comps[3] + 1) * src_comps[i] + (256 - src_comps[3]) * dst_comps[i]) >> 8;
-    }
-    dst_comps[3] = 0xFF;
-
-}
-
+    int x;
+    int y;
+} BitmapCoord;
 
 typedef struct
 {
@@ -139,7 +38,6 @@ typedef struct
     int y;
     int w;
     int h;
-
 } BitmapRect;
 
 static inline
@@ -159,6 +57,19 @@ int intersect_half_open(int a, int b, int c, int d, int *out_a, int *out_b)
         *out_a = lower;
         *out_b = upper;
         return 1;
+    }
+}
+
+static inline
+void extend_interval(int x, int* lower, int* upper)
+{
+    if (x < *lower)
+    {
+        *lower = x;
+    }
+    else if (x > *upper)
+    {
+        *upper = x;
     }
 }
 
@@ -184,6 +95,21 @@ int bitmap_rect_contains(BitmapRect r, int x, int y)
 {
     return r.x <= x && x < r.x + r.w && r.y <= y && y < r.y + r.h;
 }
+
+static inline
+BitmapRect bitmap_rect_extrema(int min_x, int min_y, int max_x, int max_y)
+{
+    BitmapRect result = {
+        min_x,
+        min_y, 
+        max_x - min_x + 1,
+        max_y - min_y + 1
+    };
+    return result;
+}
+
+BitmapRect bitmap_rect_around_points(BitmapCoord* points, int n);
+BitmapRect bitmap_rect_pad(BitmapRect r, int pad_w, int pad_h);
 
 typedef struct
 {
@@ -269,6 +195,15 @@ void bitmap_fill_rect(Bitmap* dst, int x1, int y1, int x2, int y2, uint32_t colo
 
 void bitmap_stroke_ellipse(Bitmap* dst, int x1, int y1, int x2, int y2, uint32_t color);
 void bitmap_fill_ellipse(Bitmap* dst, int x1, int y1, int x2, int y2, uint32_t color);
+
+void bitmap_stroke_polygon(
+        Bitmap* dst,
+        BitmapCoord* points,
+        int n,
+        int closed,
+        int width,
+        uint32_t color
+        );
 
 void bitmap_invert_colors(Bitmap* bitmap);
 
