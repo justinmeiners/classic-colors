@@ -145,7 +145,7 @@ typedef struct
     SelectMode select_mode;
     BucketMode bucket_mode;
 
-    Viewport viewport;
+    CcViewport viewport;
 
     int max_undo;
 

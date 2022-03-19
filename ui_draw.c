@@ -189,7 +189,7 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
         case ButtonPress:
             ctx->tool_force_align = (event->xbutton.state & ShiftMask);
 
-            viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+            cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
             paint_tool_down(ctx, x, y, event->xbutton.button);
 
             if (g_down_timer != 0)
@@ -207,7 +207,7 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
         {
             int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
 
-            viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+            cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
             paint_tool_up(ctx, x, y, event->xbutton.button);
 
             if (g_down_timer != 0)
@@ -228,7 +228,7 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
         case MotionNotify:
             ctx->tool_force_align = (event->xbutton.state & ShiftMask);
 
-            viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
+            cc_viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
             paint_tool_move(ctx, x, y);
             shouldRefresh = 1;
             break;

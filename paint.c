@@ -132,7 +132,7 @@ int paint_open_file(PaintContext* ctx, const char* path, const char** error_mess
     cc_layer_reset(ctx->layers + LAYER_OVERLAY);
     ctx->active_layer = LAYER_MAIN;
 
-    viewport_init(&ctx->viewport);
+    cc_viewport_init(&ctx->viewport);
 
     cc_undo_queue_clear(&ctx->undo);
     paint_undo_save_full(ctx);
@@ -254,7 +254,7 @@ int paint_init(PaintContext* ctx)
     ctx->max_undo = 80;
     ctx->tool_force_align = 0;
 
-    viewport_init(&ctx->viewport);
+    cc_viewport_init(&ctx->viewport);
 
     ctx->tool = TOOL_BRUSH;
     ctx->previous_tool = TOOL_BRUSH;

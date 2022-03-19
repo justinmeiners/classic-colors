@@ -31,13 +31,13 @@ void cb_view_menu_(Widget widget, XtPointer a, XtPointer b)
         case 0:
         {
             int new_zoom = MIN(ctx->viewport.zoom * 2, MAX_ZOOM);
-            ctx->viewport = viewport_zoom_centered(&ctx->viewport, new_zoom);
+            ctx->viewport = cc_viewport_zoom_centered(&ctx->viewport, new_zoom);
             break;
         }
         case 1:
         {
             int new_zoom = MAX(ctx->viewport.zoom / 2, MIN_ZOOM);
-            ctx->viewport = viewport_zoom_centered(&ctx->viewport, new_zoom);
+            ctx->viewport = cc_viewport_zoom_centered(&ctx->viewport, new_zoom);
             break;
         }
         case 3:

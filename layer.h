@@ -94,7 +94,7 @@ CcBitmap* cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed
 void test_text_wordwrap(void);
 
 
-void text_render(
+void cc_text_render(
         CcBitmap* bitmap,
         const wchar_t* text,
         const stbtt_fontinfo* font_info,
@@ -118,10 +118,10 @@ typedef struct
 
     int zoom;
 
-} Viewport;
+} CcViewport;
 
 static inline
-void viewport_init(Viewport* v)
+void cc_viewport_init(CcViewport* v)
 {
     v->paint_x = 0;
     v->paint_y = 0;
@@ -133,16 +133,16 @@ void viewport_init(Viewport* v)
 }
 
 static inline
-void viewport_coord_to_paint(const Viewport* v, int x, int y, int* out_x, int* out_y)
+void cc_viewport_coord_to_paint(const CcViewport* v, int x, int y, int* out_x, int* out_y)
 {
     *out_x = (x / v->zoom) + v->paint_x;
     *out_y = (y / v->zoom) + v->paint_y;
 }
 
 static inline
-Viewport viewport_zoom_centered(const Viewport* v, int new_zoom)
+CcViewport cc_viewport_zoom_centered(const CcViewport* v, int new_zoom)
 {
-    Viewport out;
+    CcViewport out;
     out.w = v->w;
     out.h = v->h;
     out.zoom = new_zoom;

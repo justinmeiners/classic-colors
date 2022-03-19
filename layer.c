@@ -155,7 +155,7 @@ void cc_layer_render(CcLayer* layer)
     if (layer->text && layer->bitmaps && layer->font != -1)
     {
         cc_bitmap_clear(layer->bitmaps, COLOR_CLEAR);
-        text_render(
+        cc_text_render(
                 layer->bitmaps,
                 layer->text,
                 &layer->font_info,
@@ -532,7 +532,7 @@ static int kern_advance_(const wchar_t* text, int i, void* ctx)
     return  (int)roundf((ax + kern) * scale);
 }
 
-void text_render(
+void cc_text_render(
         CcBitmap* bitmap,
         const wchar_t* text,
         const stbtt_fontinfo* font_info,
