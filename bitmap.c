@@ -564,6 +564,13 @@ void cc_bitmap_stroke_polygon(
     }
 }
 
+static int int_compare_(const void *ap, const void *bp)
+{
+    const int* a = ap;
+    const int* b = bp;
+    return *a - *b;
+}
+
 void cc_bitmap_fill_polygon(
         CcBitmap* dst,
         CcCoord* points,
@@ -571,15 +578,57 @@ void cc_bitmap_fill_polygon(
         uint32_t color
         )
 {
-    uint32_t special_marker = 0x12345678;
-    cc_bitmap_stroke_polygon(dst, points, n, 1, 1, special_marker);
+    CcRect rect = cc_rect_around_points(points, n);
+    if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
 
-    cc_fill_even_odd_(
-        dst,
-        cc_rect_around_points(points, n),
-        color,
-        special_marker
-        );
+    int* intersections = malloc(sizeof(int) * n);
+
+    for (int y = rect.y; y < rect.y + rect.h; ++y)
+    {
+        int k = 0;
+        for (int i = 0; i < n; ++i)
+        {
+            CcCoord a = points[i];
+            CcCoord b = points[(i + 1) % n];
+
+            if (y < a.y && y < b.y) continue;
+            if (y > a.y && y > b.y) continue;
+            assert(a.y != b.y);
+
+            int inv_m = (b.x - a.x) * 10000 / (b.y - a.y);
+            int fy = y - a.y;
+            int fx = (fy * inv_m) / 10000;
+
+            intersections[k] = a.x + fx;
+            ++k;
+        }
+
+        qsort(intersections, k, sizeof(int), int_compare_);
+        
+        uint32_t* data = dst->data + dst->w * y;
+
+        int counter = 1;
+        int start = intersections[0];
+        for (int i = 1; i < k; ++i)
+        {
+            int end = intersections[i];
+
+            if (end - start > 1)
+            {
+                if (counter % 2 == 1)
+                {
+                    for (int j = start; j <= end; ++j)
+                        data[j] = color;
+                }
+
+                counter += 1;
+            }
+
+            start = end;
+        }
+    }
+
+    free(intersections);
 }
 
 void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
