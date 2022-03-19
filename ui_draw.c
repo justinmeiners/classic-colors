@@ -381,7 +381,7 @@ void shm_shutdown_(DrawInfo* ctx, Display* dpy)
 }
 
 static
-int shm_prepare_(DrawInfo* ctx, Display* dpy, const Layer* composite)
+int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
 {
 #ifndef FEATURE_SHM
     assert(0);
@@ -486,7 +486,7 @@ void ui_refresh_drawing(int clear)
 
     paint_composite(ctx);
 
-    const Layer* composite = ctx->layers + LAYER_COMPOSITE;
+    const CcLayer* composite = ctx->layers + LAYER_COMPOSITE;
 
     int w = composite->bitmaps->w;
     int h = composite->bitmaps->h;
@@ -535,7 +535,7 @@ void ui_refresh_drawing(int clear)
 
     if (ctx->active_layer == LAYER_OVERLAY)
     {
-        const Layer* l = ctx->layers + ctx->active_layer;
+        const CcLayer* l = ctx->layers + ctx->active_layer;
         if (l->bitmaps != NULL)
         {
             char dash_pattern[] = { 4, 2 };

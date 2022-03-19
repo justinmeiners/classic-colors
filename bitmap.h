@@ -81,7 +81,7 @@ void cc_bitmap_blit(
         int dst_y,
         int w,
         int h,
-        ColorBlend blend
+        CcColorBlend blend
         );
 
 void cc_bitmap_blit_unsafe(
@@ -93,7 +93,7 @@ void cc_bitmap_blit_unsafe(
         int dst_y,
         int w,
         int h,
-        ColorBlend blend
+        CcColorBlend blend
         );
 
 void cc_bitmap_draw_spray(CcBitmap* b, int cx, int cy, int r, int density, uint32_t color);

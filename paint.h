@@ -135,7 +135,7 @@ enum {
 
 typedef struct
 {
-    Layer layers[LAYER_COUNT];
+    CcLayer layers[LAYER_COUNT];
     int active_layer;
 
     PaintTool tool;
@@ -228,7 +228,7 @@ void paint_select(PaintContext* ctx, int x, int y, int w, int h);
 void paint_select_clear(PaintContext* ctx);
 
 void paint_set_color(PaintContext* ctx, uint32_t color, int fg);
-void paint_set_font(PaintContext* ctx, Layer* layer, int font);
+void paint_set_font(PaintContext* ctx, CcLayer* layer, int font);
 
 const char* paint_font_name(int index);
 int paint_font_count();

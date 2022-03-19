@@ -32,7 +32,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "stb_truetype.h" /* http://nothings.org/stb/stb_truetype.h */
 
-void layer_init(Layer* layer, int x, int y)
+void cc_layer_init(CcLayer* layer, int x, int y)
 {
     layer->bitmaps = NULL;
     layer->x = x;
@@ -47,30 +47,30 @@ void layer_init(Layer* layer, int x, int y)
     layer->font = -1;
 }
 
-void layer_shutdown(Layer* layer)
+void cc_layer_shutdown(CcLayer* layer)
 {
-    layer_set_text(layer, NULL); 
-    layer_set_bitmap(layer, NULL);
+    cc_layer_set_text(layer, NULL); 
+    cc_layer_set_bitmap(layer, NULL);
 }
 
-void layer_reset(Layer* layer)
+void cc_layer_reset(CcLayer* layer)
 {
-    layer_set_text(layer, NULL); 
-    layer_set_bitmap(layer, NULL);
+    cc_layer_set_text(layer, NULL); 
+    cc_layer_set_bitmap(layer, NULL);
     layer->blend = COLOR_BLEND_OVERLAY;
 }
 
-void layer_set_bitmap(Layer* layer, CcBitmap* new_bitmap)
+void cc_layer_set_bitmap(CcLayer* layer, CcBitmap* new_bitmap)
 {
     if (layer->bitmaps)
     {
         cc_bitmap_destroy(layer->bitmaps);
     }
     layer->bitmaps = new_bitmap;
-    layer_render(layer);
+    cc_layer_render(layer);
 }
 
-void layer_flip(Layer* layer, int horiz)
+void cc_layer_flip(CcLayer* layer, int horiz)
 {
     CcBitmap* n = cc_bitmap_create(layer->bitmaps->w, layer->bitmaps->h);
     if (horiz)
@@ -81,10 +81,10 @@ void layer_flip(Layer* layer, int horiz)
     {
         cc_bitmap_flip_vert(layer->bitmaps, n);
     }
-    layer_set_bitmap(layer, n);
+    cc_layer_set_bitmap(layer, n);
 }
 
-void layer_rotate_90(Layer* layer, int repeat)
+void cc_layer_rotate_90(CcLayer* layer, int repeat)
 {
     CcBitmap* current = cc_bitmap_create_copy(layer->bitmaps);
     CcBitmap* next = cc_bitmap_create(layer->bitmaps->h, layer->bitmaps->w);
@@ -99,19 +99,19 @@ void layer_rotate_90(Layer* layer, int repeat)
         --repeat;
     }
 
-    layer_set_bitmap(layer, current);
+    cc_layer_set_bitmap(layer, current);
     cc_bitmap_destroy(next);
 }
 
 
-void layer_rotate_angle(Layer* layer, double angle, uint32_t bg_color)
+void cc_layer_rotate_angle(CcLayer* layer, double angle, uint32_t bg_color)
 {
     CcTransform rotate = cc_transform_rotate(-M_PI * angle / 180.0);
     CcBitmap* b = cc_bitmap_transform(layer->bitmaps, NULL, rotate, bg_color);
-    layer_set_bitmap(layer, b);
+    cc_layer_set_bitmap(layer, b);
 }
 
-void layer_stretch(Layer* layer, int w, int h, int w_angle, int h_angle, uint32_t bg_color)
+void cc_layer_stretch(CcLayer* layer, int w, int h, int w_angle, int h_angle, uint32_t bg_color)
 {
     double sw = (double)w / 100.0;
     double sh = (double)h / 100.0;
@@ -124,11 +124,11 @@ void layer_stretch(Layer* layer, int w, int h, int w_angle, int h_angle, uint32_
     CcTransform final = cc_transform_concat(scale, skew);
 
     CcBitmap* b = cc_bitmap_transform(layer->bitmaps, NULL, final, bg_color);
-    layer_set_bitmap(layer, b);
+    cc_layer_set_bitmap(layer, b);
 }
 
 
-void layer_resize(Layer* layer, int new_w, int new_h, uint32_t bg_color)
+void cc_layer_resize(CcLayer* layer, int new_w, int new_h, uint32_t bg_color)
 {
     const CcBitmap* src = layer->bitmaps;
     CcBitmap* b = cc_bitmap_create(new_w, new_h);
@@ -136,21 +136,21 @@ void layer_resize(Layer* layer, int new_w, int new_h, uint32_t bg_color)
     cc_bitmap_clear(b, bg_color);
     cc_bitmap_blit(src, b, 0, 0, 0, 0, src->w, src->h, COLOR_BLEND_REPLACE);
 
-    layer_set_bitmap(layer, b);
+    cc_layer_set_bitmap(layer, b);
 }
 
 
-void layer_ensure_size(Layer* layer, int w, int h)
+void cc_layer_ensure_size(CcLayer* layer, int w, int h)
 {
     if (layer->bitmaps == NULL ||
         layer->bitmaps->w != w ||
         layer->bitmaps->h != h)
     {
-        layer_set_bitmap(layer, cc_bitmap_create(w, h));
+        cc_layer_set_bitmap(layer, cc_bitmap_create(w, h));
     }
 }
 
-void layer_render(Layer* layer)
+void cc_layer_render(CcLayer* layer)
 {
     if (layer->text && layer->bitmaps && layer->font != -1)
     {
@@ -166,7 +166,7 @@ void layer_render(Layer* layer)
     }
 }
 
-void layer_set_text(Layer* layer, const wchar_t* text)
+void cc_layer_set_text(CcLayer* layer, const wchar_t* text)
 {
     if (!text)
     {
@@ -184,7 +184,7 @@ void layer_set_text(Layer* layer, const wchar_t* text)
         }
         wcsncpy(layer->text, text, len);
     }
-    layer_render(layer);
+    cc_layer_render(layer);
 }
 
 
@@ -416,7 +416,7 @@ void test_text_wordwrap(void)
 static void render_(
         const stbtt_fontinfo* font_info,
         int line_height,
-        TextAlign alignment,
+        CcTextAlign alignment,
         uint32_t color,
         const wchar_t* text,
         const LineRange* lines,
@@ -537,7 +537,7 @@ void text_render(
         const wchar_t* text,
         const stbtt_fontinfo* font_info,
         int font_size,
-        TextAlign align,
+        CcTextAlign align,
         uint32_t font_color
     )
 {

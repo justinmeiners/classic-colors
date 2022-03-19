@@ -52,7 +52,7 @@ void undo_queue_push(UndoQueue* q, UndoPatch* patch);
 int undo_queue_can_undo(UndoQueue* q);
 int undo_queue_can_redo(UndoQueue* q);
 
-void undo_queue_undo(UndoQueue* q, Layer* target);
-void undo_queue_redo(UndoQueue* q, Layer* target);
+void undo_queue_undo(UndoQueue* q, CcLayer* target);
+void undo_queue_redo(UndoQueue* q, CcLayer* target);
 
 #endif

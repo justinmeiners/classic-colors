@@ -104,7 +104,7 @@ void cc_bitmap_blit(
         int dst_y,
         int w,
         int h,
-        ColorBlend blend
+        CcColorBlend blend
         )
 {
     CcRect dst_rect = {
@@ -136,7 +136,7 @@ void cc_bitmap_blit_unsafe(
         int dst_y,
         int w,
         int h,
-        ColorBlend blend
+        CcColorBlend blend
         )
 {
     assert(src_x + w <= src->w);

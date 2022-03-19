@@ -200,7 +200,7 @@ int undo_queue_can_redo(UndoQueue* q)
     return q->last_undo && q->last_undo->next;
 }
 
-void undo_queue_undo(UndoQueue* q, Layer* target)
+void undo_queue_undo(UndoQueue* q, CcLayer* target)
 {
     if (!undo_queue_can_undo(q))
     {
@@ -211,7 +211,7 @@ void undo_queue_undo(UndoQueue* q, Layer* target)
     assert(last_full->next);
 
     CcBitmap* new_canvas = undo_replay_(last_full, q->last_undo);
-    layer_set_bitmap(target, new_canvas);
+    cc_layer_set_bitmap(target, new_canvas);
 
     // one more thing.. we need to move "last_undo" back one
     UndoPatch* it = last_full;
@@ -223,7 +223,7 @@ void undo_queue_undo(UndoQueue* q, Layer* target)
     if (DEBUG_LOG) printf("undo_count %d\n", q->undo_count);
 }
 
-void undo_queue_redo(UndoQueue* q, Layer* target)
+void undo_queue_redo(UndoQueue* q, CcLayer* target)
 {
     if (!undo_queue_can_redo(q))
     {
@@ -234,7 +234,7 @@ void undo_queue_redo(UndoQueue* q, Layer* target)
     CcBitmap* to_blit = cc_bitmap_decompress(it->data, it->data_size);
     if (it->full_image)
     {
-        layer_set_bitmap(target, to_blit);
+        cc_layer_set_bitmap(target, to_blit);
     }
     else
     {

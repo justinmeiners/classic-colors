@@ -30,7 +30,7 @@ typedef enum {
     COLOR_BLEND_FULL,
     // invert colors in destination
     COLOR_BLEND_INVERT,
-} ColorBlend;
+} CcColorBlend;
 
 
 #define COLOR_WHITE 0xFFFFFFFF

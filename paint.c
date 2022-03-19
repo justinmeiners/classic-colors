@@ -55,10 +55,10 @@ void paint_undo_save(PaintContext* ctx, int x, int y, int w, int h)
         x, y, w, h
     };
 
-    const Layer* l = ctx->layers + LAYER_MAIN;
+    const CcLayer* l = ctx->layers + LAYER_MAIN;
 
     CcRect to_save;
-    if (!cc_rect_intersect(layer_rect(l), r, &to_save)) return;
+    if (!cc_rect_intersect(cc_layer_rect(l), r, &to_save)) return;
 
     UndoPatch* patch = undo_patch_create(ctx->layers[LAYER_MAIN].bitmaps, to_save);
     undo_queue_push(&ctx->undo, patch);
@@ -78,7 +78,7 @@ void paint_undo(PaintContext* ctx)
     undo_queue_undo(&ctx->undo, ctx->layers + LAYER_MAIN);
 
     ctx->active_layer = LAYER_MAIN;
-    layer_reset(ctx->layers + LAYER_OVERLAY);
+    cc_layer_reset(ctx->layers + LAYER_OVERLAY);
 }
 
 void paint_redo(PaintContext* ctx)
@@ -86,7 +86,7 @@ void paint_redo(PaintContext* ctx)
     undo_queue_redo(&ctx->undo, ctx->layers + LAYER_MAIN);
 
     ctx->active_layer = LAYER_MAIN;
-    layer_reset(ctx->layers + LAYER_OVERLAY);
+    cc_layer_reset(ctx->layers + LAYER_OVERLAY);
 }
 
 
@@ -128,8 +128,8 @@ int paint_open_file(PaintContext* ctx, const char* path, const char** error_mess
 		free(data);
     }
 
-    layer_set_bitmap(ctx->layers + LAYER_MAIN, b);
-    layer_reset(ctx->layers + LAYER_OVERLAY);
+    cc_layer_set_bitmap(ctx->layers + LAYER_MAIN, b);
+    cc_layer_reset(ctx->layers + LAYER_OVERLAY);
     ctx->active_layer = LAYER_MAIN;
 
     viewport_init(&ctx->viewport);
@@ -188,7 +188,7 @@ int save_file_(PaintContext* ctx, const char* path)
         printf("saving file: %s %d\n", path, mode);
     }
 
-    const Layer* l = ctx->layers + LAYER_MAIN;
+    const CcLayer* l = ctx->layers + LAYER_MAIN;
     const CcBitmap* b = l->bitmaps;
 
 
@@ -274,7 +274,7 @@ int paint_init(PaintContext* ctx)
     ctx->request_tool_timer = 0;
 
     for (int i = 0; i < LAYER_COUNT; ++i)
-        layer_init(ctx->layers + i, 0, 0);
+        cc_layer_init(ctx->layers + i, 0, 0);
 
     undo_queue_init(&ctx->undo);
     paint_open_file(ctx, NULL, NULL);
@@ -283,51 +283,51 @@ int paint_init(PaintContext* ctx)
 
 void paint_invert_colors(PaintContext* ctx)
 {
-    Layer* l = ctx->layers + ctx->active_layer;
+    CcLayer* l = ctx->layers + ctx->active_layer;
     cc_bitmap_invert_colors(l->bitmaps);
     paint_undo_save_full(ctx);
 }
 
 void paint_flip(PaintContext* ctx, int horiz)
 {
-    Layer* l = ctx->layers + ctx->active_layer;
-    layer_flip(l, horiz);
+    CcLayer* l = ctx->layers + ctx->active_layer;
+    cc_layer_flip(l, horiz);
     paint_undo_save_full(ctx);
 }
 
 void paint_rotate_90(PaintContext* ctx, int repeat)
 {
-    Layer* l = ctx->layers + ctx->active_layer;
-    layer_rotate_90(l, repeat);
+    CcLayer* l = ctx->layers + ctx->active_layer;
+    cc_layer_rotate_90(l, repeat);
     paint_undo_save_full(ctx);
 }
 
 void paint_rotate_angle(PaintContext* ctx, double angle)
 {
-    Layer* l = ctx->layers + ctx->active_layer;
-    layer_rotate_angle(l, angle, ctx->bg_color);
+    CcLayer* l = ctx->layers + ctx->active_layer;
+    cc_layer_rotate_angle(l, angle, ctx->bg_color);
     paint_undo_save_full(ctx);
 }
 
 void paint_stretch(PaintContext* ctx, int w, int h, int w_angle, int h_angle)
 {
     if (DEBUG_LOG) printf("stretch %d, %d, %d, %d\n", w, h, w_angle, h_angle);
-    Layer* l = ctx->layers + ctx->active_layer;
-    layer_stretch(l, w, h, w_angle, h_angle, ctx->bg_color);
+    CcLayer* l = ctx->layers + ctx->active_layer;
+    cc_layer_stretch(l, w, h, w_angle, h_angle, ctx->bg_color);
     paint_undo_save_full(ctx);
 }
 
 void paint_clear(PaintContext* ctx)
 {
-    Layer* l = ctx->layers + ctx->active_layer;
+    CcLayer* l = ctx->layers + ctx->active_layer;
     cc_bitmap_clear(l->bitmaps, ctx->bg_color);
     paint_undo_save_full(ctx);
 }
 
 void paint_resize(PaintContext* ctx, int new_w, int new_h)
 {
-    Layer* l = ctx->layers + ctx->active_layer;
-    layer_resize(l, new_w, new_h, ctx->bg_color);
+    CcLayer* l = ctx->layers + ctx->active_layer;
+    cc_layer_resize(l, new_w, new_h, ctx->bg_color);
     paint_undo_save_full(ctx);
 }
 
@@ -365,14 +365,14 @@ uint32_t shape_fill_color_(PaintContext* ctx)
 static
 void prepare_empty_overlay_(PaintContext* ctx)
 {
-    Layer* l = ctx->layers + LAYER_OVERLAY;
+    CcLayer* l = ctx->layers + LAYER_OVERLAY;
     l->x = 0;
     l->y = 0;
 
-    layer_ensure_size(l, paint_w(ctx), paint_h(ctx));
+    cc_layer_ensure_size(l, paint_w(ctx), paint_h(ctx));
     cc_bitmap_clear(l->bitmaps, COLOR_CLEAR);
     l->blend = COLOR_BLEND_OVERLAY;
-    layer_set_text(l, NULL);
+    cc_layer_set_text(l, NULL);
 }
 
 static
@@ -380,7 +380,7 @@ void settle_selection_layer_(PaintContext* ctx)
 {
     if (ctx->active_layer == LAYER_OVERLAY)
     {
-        Layer* l = ctx->layers + LAYER_OVERLAY;
+        CcLayer* l = ctx->layers + LAYER_OVERLAY;
 
         if (DEBUG_LOG)
         {
@@ -388,10 +388,10 @@ void settle_selection_layer_(PaintContext* ctx)
         }
         CcBitmap* b = ctx->layers[LAYER_MAIN].bitmaps;
 
-        cc_bitmap_blit(l->bitmaps, b, 0, 0, l->x, l->y, layer_w(l), layer_h(l), l->blend);
+        cc_bitmap_blit(l->bitmaps, b, 0, 0, l->x, l->y, cc_layer_w(l), cc_layer_h(l), l->blend);
         paint_undo_save(ctx, l->x, l->y, l->bitmaps->w, l->bitmaps->h);
 
-        layer_reset(l);
+        cc_layer_reset(l);
         ctx->active_layer = LAYER_MAIN;
     }
 }
@@ -442,7 +442,7 @@ void paint_set_tool(PaintContext* ctx, PaintTool tool)
 static
 void redraw_polygon_(PaintContext* ctx)
 {
-    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
     cc_bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
 
     cc_bitmap_stroke_polygon(
@@ -555,8 +555,8 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
 
             if (ctx->active_layer == LAYER_OVERLAY)
             {
-                const Layer* l = ctx->layers + ctx->active_layer;
-                if (!cc_rect_contains(layer_rect(l), x, y))
+                const CcLayer* l = ctx->layers + ctx->active_layer;
+                if (!cc_rect_contains(cc_layer_rect(l), x, y))
                 {
                     settle_selection_layer_(ctx);
                     prepare_empty_overlay_(ctx);
@@ -596,7 +596,7 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
                 int w = ctx->viewport.w / ctx->zoom_level;
                 int h = ctx->viewport.h / ctx->zoom_level;
 
-                Layer* overlay = ctx->layers + LAYER_OVERLAY;
+                CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
                 overlay->blend = COLOR_BLEND_INVERT;
                 cc_bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
                 cc_bitmap_stroke_rect(overlay->bitmaps,  x - w/2, y - h/2, x + w/2, y + h/2, 1, COLOR_BLACK);
@@ -610,7 +610,7 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
                 align_line_to_45_angle(ctx->line_x, ctx->line_y, x, y, &x, &y);
             }
 
-            Layer* overlay = ctx->layers + LAYER_OVERLAY;
+            CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
             cc_bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
             cc_bitmap_interp_square(overlay->bitmaps, ctx->line_x, ctx->line_y, x, y, ctx->line_width, fg_color_(ctx));
             break;
@@ -622,7 +622,7 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
                 align_rect_to_square(ctx->line_x, ctx->line_y, x, y, &x, &y);
             }
  
-            Layer* overlay = ctx->layers + LAYER_OVERLAY;
+            CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
             cc_bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
 
             if (ctx->shape_flags & SHAPE_FILL)
@@ -642,7 +642,7 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
                 align_rect_to_square(ctx->line_x, ctx->line_y, x, y, &x, &y);
             }
  
-            Layer* overlay = ctx->layers + LAYER_OVERLAY;
+            CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
             cc_bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
 
             if (ctx->shape_flags & SHAPE_FILL)
@@ -681,13 +681,13 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
         {
             if (ctx->active_layer == LAYER_OVERLAY)
             {
-                Layer* overlay = ctx->layers + LAYER_OVERLAY;
+                CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
                 overlay->x += x - ctx->tool_x;
                 overlay->y += y - ctx->tool_y;
             }
             else
             {
-                Layer* overlay = ctx->layers + LAYER_OVERLAY;
+                CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
                 overlay->blend = COLOR_BLEND_INVERT;
                 cc_bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
                 cc_bitmap_dotted_rect(overlay->bitmaps, ctx->line_x, ctx->line_y, x, y, COLOR_BLACK);
@@ -724,14 +724,14 @@ void paint_tool_update(PaintContext* ctx)
 static
 void push_undo_stroke_(PaintContext* ctx, int radius)
 {
-    const Layer* l = ctx->layers + LAYER_MAIN;
+    const CcLayer* l = ctx->layers + LAYER_MAIN;
     CcRect r = cc_rect_extrema(
             ctx->tool_min_x, ctx->tool_min_y,
             ctx->tool_max_x, ctx->tool_max_y
             );
 
     r = cc_rect_pad(r, radius, radius);
-    cc_rect_intersect(r, layer_rect(l), &r);
+    cc_rect_intersect(r, cc_layer_rect(l), &r);
     paint_undo_save(ctx, r.x, r.y, r.w, r.h);
 }
 
@@ -782,7 +782,7 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
                ctx->viewport.paint_y = 0;
            }
 
-           layer_reset(ctx->layers + LAYER_OVERLAY);
+           cc_layer_reset(ctx->layers + LAYER_OVERLAY);
            break;
         case TOOL_LINE:
             if (ctx->tool_force_align)
@@ -791,7 +791,7 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             }
 
             min_to_line_(ctx, x, y);
-            layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
+            cc_layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
 
             cc_bitmap_interp_square(b, ctx->line_x, ctx->line_y, x, y, ctx->line_width, fg_color_(ctx));
             push_undo_stroke_(ctx, ctx->line_width);
@@ -803,7 +803,7 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             }
  
             min_to_line_(ctx, x, y);
-            layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
+            cc_layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
 
             if (ctx->shape_flags & SHAPE_FILL)
             {
@@ -822,7 +822,7 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             }
  
             min_to_line_(ctx, x, y);
-            layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
+            cc_layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
 
             if (ctx->shape_flags & SHAPE_FILL)
             {
@@ -851,13 +851,13 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
                     CcBitmap* b = cc_bitmap_create(w, h);
                     cc_bitmap_clear(b, COLOR_CLEAR);
 
-                    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+                    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
                     overlay->blend = COLOR_BLEND_OVERLAY;
                     overlay->x = ctx->tool_min_x;
                     overlay->y = ctx->tool_min_y;
                     overlay->font_color = ctx->fg_color;
-                    layer_set_bitmap(overlay, b);
-                    layer_set_text(overlay, NULL);
+                    cc_layer_set_bitmap(overlay, b);
+                    cc_layer_set_text(overlay, NULL);
 
                     if (overlay->font == -1)
                         paint_set_font(ctx, overlay, 0);
@@ -884,13 +884,13 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
 
 int paint_w(const PaintContext* ctx)
 {
-    const Layer* l = ctx->layers + LAYER_MAIN;
+    const CcLayer* l = ctx->layers + LAYER_MAIN;
     return l->bitmaps->w;
 }
 
 int paint_h(const PaintContext* ctx)
 {
-    const Layer* l = ctx->layers + LAYER_MAIN;
+    const CcLayer* l = ctx->layers + LAYER_MAIN;
     return l->bitmaps->h;
 }
 
@@ -898,11 +898,11 @@ void paint_crop(PaintContext* ctx)
 {
     if (ctx->active_layer == LAYER_OVERLAY)
     {
-        Layer* overlay = ctx->layers + LAYER_OVERLAY;
-        Layer* main = ctx->layers + LAYER_MAIN;
+        CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
+        CcLayer* main = ctx->layers + LAYER_MAIN;
 
-        layer_set_bitmap(main, cc_bitmap_create_copy(overlay->bitmaps));
-        layer_reset(overlay);
+        cc_layer_set_bitmap(main, cc_bitmap_create_copy(overlay->bitmaps));
+        cc_layer_reset(overlay);
 
         ctx->active_layer = LAYER_MAIN;
         paint_undo_save_full(ctx);
@@ -928,18 +928,18 @@ void paint_composite(PaintContext* ctx)
     int target_w = int_ceil(ctx->viewport.w, ctx->viewport.zoom);
     int target_h = int_ceil(ctx->viewport.h, ctx->viewport.zoom);
 
-    layer_ensure_size(ctx->layers + LAYER_INTERMEDIATE, target_w, target_h);
-    layer_ensure_size(ctx->layers + LAYER_COMPOSITE, ctx->viewport.w, ctx->viewport.h);
+    cc_layer_ensure_size(ctx->layers + LAYER_INTERMEDIATE, target_w, target_h);
+    cc_layer_ensure_size(ctx->layers + LAYER_COMPOSITE, ctx->viewport.w, ctx->viewport.h);
 
     int needs_zoom = ctx->viewport.zoom != 1;
 
     int target_layer = needs_zoom ? LAYER_INTERMEDIATE : LAYER_COMPOSITE;
-    Layer* target = ctx->layers + target_layer;
+    CcLayer* target = ctx->layers + target_layer;
     cc_bitmap_clear(target->bitmaps, ctx->view_bg_color);
 
     for (int i = LAYER_MAIN; i < LAYER_COUNT; ++i)
     {
-        const Layer* l = ctx->layers + i;
+        const CcLayer* l = ctx->layers + i;
         if (l->bitmaps != NULL)
         {
             cc_bitmap_blit(
@@ -947,7 +947,7 @@ void paint_composite(PaintContext* ctx)
                     target->bitmaps,
                     0, 0,
                     l->x - vx, l->y - vy,
-                    layer_w(l), layer_h(l),
+                    cc_layer_w(l), cc_layer_h(l),
                     l->blend
                     );
         }
@@ -976,7 +976,7 @@ void paint_copy(PaintContext* ctx)
 void paint_cut(PaintContext* ctx)
 {
     paint_copy(ctx);
-    layer_reset(ctx->layers + LAYER_OVERLAY);
+    cc_layer_reset(ctx->layers + LAYER_OVERLAY);
     ctx->active_layer = LAYER_MAIN;
 }
 
@@ -985,10 +985,10 @@ void paint_paste(PaintContext* ctx)
     if (ctx->paste_board_data)
     {
         paint_set_tool(ctx, TOOL_SELECT_RECTANGLE);
-        Layer* overlay = ctx->layers + LAYER_OVERLAY;
+        CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
         overlay->x = ctx->viewport.paint_x;
         overlay->y = ctx->viewport.paint_y;
-        layer_set_bitmap(overlay, cc_bitmap_decompress(ctx->paste_board_data, ctx->paste_board_size));
+        cc_layer_set_bitmap(overlay, cc_bitmap_decompress(ctx->paste_board_data, ctx->paste_board_size));
         ctx->active_layer = LAYER_OVERLAY;
     }
 }
@@ -1003,12 +1003,12 @@ void paint_select(PaintContext* ctx, int x, int y, int w, int h)
     paint_set_tool(ctx, TOOL_SELECT_RECTANGLE);
     if (w <= 0 || h <= 0) return;
 
-    Layer* l = ctx->layers + LAYER_MAIN;
+    CcLayer* l = ctx->layers + LAYER_MAIN;
 
     CcRect rect = {
         x, y, w, h
     };
-    if (!cc_rect_intersect(rect, layer_rect(l), &rect)) return;
+    if (!cc_rect_intersect(rect, cc_layer_rect(l), &rect)) return;
 
     ctx->active_layer = LAYER_OVERLAY;
 
@@ -1028,10 +1028,10 @@ void paint_select(PaintContext* ctx, int x, int y, int w, int h)
         cc_bitmap_replace(b, ctx->bg_color, COLOR_CLEAR);
     }
 
-    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
     overlay->x = rect.x;
     overlay->y = rect.y;
-    layer_set_bitmap(overlay, b);
+    cc_layer_set_bitmap(overlay, b);
 
     cc_bitmap_fill_rect(
             l->bitmaps,
@@ -1041,7 +1041,7 @@ void paint_select(PaintContext* ctx, int x, int y, int w, int h)
             bg_color_(ctx)
             );
 
-    paint_undo_save(ctx, overlay->x, overlay->y, layer_w(overlay), layer_h(overlay));
+    paint_undo_save(ctx, overlay->x, overlay->y, cc_layer_w(overlay), cc_layer_h(overlay));
 }
 
 
@@ -1049,7 +1049,7 @@ void paint_select_clear(PaintContext* ctx)
 {
     paint_set_tool(ctx, TOOL_SELECT_RECTANGLE);
     ctx->active_layer = LAYER_MAIN;
-    layer_reset(ctx->layers + LAYER_OVERLAY);
+    cc_layer_reset(ctx->layers + LAYER_OVERLAY);
 }
 
 void paint_set_color(PaintContext* ctx, uint32_t color, int fg)
@@ -1060,9 +1060,9 @@ void paint_set_color(PaintContext* ctx, uint32_t color, int fg)
 
         if (ctx->tool == TOOL_TEXT && ctx->active_layer == LAYER_OVERLAY)
         {
-            Layer* overlay = ctx->layers + LAYER_OVERLAY;
+            CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
             overlay->font_color = color;
-            layer_render(overlay);
+            cc_layer_render(overlay);
         }
     }
     else
@@ -1071,7 +1071,7 @@ void paint_set_color(PaintContext* ctx, uint32_t color, int fg)
     }
 }
 
-void paint_set_font(PaintContext* ctx, Layer* layer, int font)
+void paint_set_font(PaintContext* ctx, CcLayer* layer, int font)
 {
     const FontEntry* entry = font_table + font;
     layer->font = font;
@@ -1081,5 +1081,5 @@ void paint_set_font(PaintContext* ctx, Layer* layer, int font)
         layer->font = -1;
         fprintf(stderr, "failed to load font\n");
     }
-    layer_render(layer);
+    cc_layer_render(layer);
 }
