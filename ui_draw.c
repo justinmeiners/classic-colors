@@ -54,7 +54,7 @@ Widget scroll_w = NULL;
 XtIntervalId g_down_timer = 0;
 
 static
-void copy_bitmap_to_ximage_(XImage* dest, const Bitmap* src, const XVisualInfo* info)
+void copy_bitmap_to_ximage_(XImage* dest, const CcBitmap* src, const XVisualInfo* info)
 {
     int comps[4];
     int i;

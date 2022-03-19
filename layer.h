@@ -32,7 +32,7 @@ typedef enum
 
 typedef struct
 {
-    Bitmap* bitmaps;
+    CcBitmap* bitmaps;
     ColorBlend blend;
 
     int x;
@@ -50,9 +50,9 @@ typedef struct
 } Layer;
 
 static inline
-BitmapRect layer_rect(const Layer* layer)
+CcRect layer_rect(const Layer* layer)
 {
-    BitmapRect r = {
+    CcRect r = {
         layer->x, layer->y, layer->bitmaps->w, layer->bitmaps->h
     };
     return r;
@@ -76,7 +76,7 @@ void layer_init(Layer* layer, int x, int y);
 void layer_shutdown(Layer* layer);
 void layer_reset(Layer* layer);
 void layer_flip(Layer* layer, int horiz);
-void layer_set_bitmap(Layer* layer, Bitmap* new_bitmap);
+void layer_set_bitmap(Layer* layer, CcBitmap* new_bitmap);
 void layer_rotate_90(Layer* layer, int repeat);
 void layer_rotate_angle(Layer* layer, double angle, uint32_t bg_color);
 void layer_stretch(Layer* layer, int w, int h, int w_angle, int h_angle, uint32_t bg_color);
@@ -87,15 +87,15 @@ void layer_set_text(Layer* layer, const wchar_t* text);
 
 void layer_render(Layer* layer);
 
-unsigned char* bitmap_compress(const Bitmap* b, size_t* out_size);
-Bitmap* bitmap_decompress(unsigned char* compressed_data, size_t compressed_size);
+unsigned char* cc_bitmap_compress(const CcBitmap* b, size_t* out_size);
+CcBitmap* cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed_size);
 
 
 void test_text_wordwrap(void);
 
 
 void text_render(
-        Bitmap* bitmap,
+        CcBitmap* bitmap,
         const wchar_t* text,
         const stbtt_fontinfo* font_info,
         int font_size,

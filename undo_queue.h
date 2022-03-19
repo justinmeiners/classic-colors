@@ -25,12 +25,12 @@ typedef struct UndoPatch
     struct UndoPatch* next;
     int full_image;
 
-    BitmapRect rect;
+    CcRect rect;
     unsigned char* data;
     size_t data_size;
 } UndoPatch;
 
-UndoPatch* undo_patch_create(const Bitmap* src, BitmapRect r);
+UndoPatch* undo_patch_create(const CcBitmap* src, CcRect r);
 void undo_patch_destroy(UndoPatch* patch);
 
 

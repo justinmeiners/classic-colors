@@ -178,7 +178,7 @@ typedef struct
     size_t paste_board_size;
     unsigned char* paste_board_data;
 
-    BitmapCoord* polygon_points;
+    CcCoord* polygon_points;
     int polygon_count;
     int polygon_capacity;
 
