@@ -111,7 +111,7 @@ void cc_bitmap_blit(
         dst_x, dst_y, w, h
     };
 
-    if (!cc_rect_intersect(dst_rect, cc_rect(dst), &dst_rect)) return;
+    if (!cc_rect_intersect(dst_rect, cc_bitmap_rect(dst), &dst_rect)) return;
 
     cc_bitmap_blit_unsafe(
             src,
@@ -256,7 +256,7 @@ void cc_bitmap_draw_spray(CcBitmap* b, int cx, int cy, int r, int density, uint3
     CcRect rect = {
         cx - r, cy - r, 2 * r, 2 * r
     };
-    cc_rect_intersect(rect, cc_rect(b), &rect);
+    cc_rect_intersect(rect, cc_bitmap_rect(b), &rect);
 
     for (int y = rect.y; y < rect.y + rect.h; ++y)
     {
@@ -278,7 +278,7 @@ void cc_bitmap_draw_circle(CcBitmap* b, int cx, int cy, int r, uint32_t color)
     CcRect rect = {
         cx - r, cy - r, 2 * r, 2 * r
     };
-    cc_rect_intersect(rect, cc_rect(b), &rect);
+    cc_rect_intersect(rect, cc_bitmap_rect(b), &rect);
 
     for (int y = rect.y; y < rect.y + rect.h; ++y)
     {
@@ -297,7 +297,7 @@ void cc_bitmap_draw_square(CcBitmap* b, int cx, int cy, int d, uint32_t color)
     CcRect rect = {
         cx - d / 2, cy - d / 2, d, d
     };
-    cc_rect_intersect(rect, cc_rect(b), &rect);
+    cc_rect_intersect(rect, cc_bitmap_rect(b), &rect);
 
     for (int y = 0; y < rect.h; ++y)
     {
@@ -353,7 +353,7 @@ void cc_bitmap_fill_rect(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t
     };
 
     CcRect to_fill;
-    cc_rect_intersect(r, cc_rect(dst), &to_fill);
+    cc_rect_intersect(r, cc_bitmap_rect(dst), &to_fill);
 
     for (int y = 0; y < to_fill.h; ++y)
     {
@@ -450,46 +450,39 @@ void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uin
 */
 
 
-void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color)
+
+static
+void cc_fill_even_odd_(CcBitmap* dst, CcRect rect, uint32_t color, uint32_t sentinel)
 {
-    // ultimate hack
-    uint32_t special_marker = 0x12345678;
-    cc_bitmap_stroke_ellipse(dst, x1, y1, x2, y2, special_marker);
-    int min_x = MIN(x1, x2);
-    int min_y = MIN(y1, y2);
-
-    int max_x = MAX(x1, x2);
-    int max_y = MAX(y1, y2);
-
     int from;
     int to;
     int dir;
 
-    if (min_x < 0) {
+    if (rect.x < 0) {
         dir = -1;
-        from = max_x;
-        to = min_x;
+        from = rect.x + rect.w;
+        to = rect.x;
     } else {
         dir = 1;
-        from = min_x;
-        to = max_x;
+        from = rect.x;
+        to = rect.x + rect.w;
     }
 
 #define PUT(x_, y_) dst->data[(x_) + (y_) * dst->w] = color;
-    for (int y = min_y; y <= max_y; ++y)
+    for (int y = rect.y; y < rect.y + rect.h; ++y)
     { 
         if (y < 0 || y >= dst->h) continue;
 
         int in_boundary = 0;
         int counter = 0;
 
-        for (int x = from; (min_x <= x && x <= max_x); x += dir)
+        for (int x = from; (rect.x <= x && x < rect.x + rect.w); x += dir)
         {
             if (x < 0 || x >= dst->w) continue;
 
             uint32_t current = dst->data[x + y * dst->w];
 
-            if (current == special_marker)
+            if (current == sentinel)
             {
                 PUT(x, y);
 
@@ -504,13 +497,35 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
                 in_boundary = 0;
             }
 
-            if (counter % 2 == 1 && y != min_y && y != max_y)
+            if (counter % 2 == 1 && y != rect.y && y != rect.y + rect.h - 1)
             {
                 PUT(x, y);
             }
         }
     }
 #undef PUT
+}
+
+void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color)
+{
+    // ultimate hack
+    uint32_t special_marker = 0x12345678;
+    cc_bitmap_stroke_ellipse(dst, x1, y1, x2, y2, special_marker);
+
+    int min_x = x1;
+    int max_x = x1;
+    extend_interval(x2, &min_x, &max_x);
+
+    int min_y = y1;
+    int max_y = y1;
+    extend_interval(y2, &min_y, &max_y);
+
+    cc_fill_even_odd_(
+        dst,
+        cc_rect_extrema(min_x, min_y, max_x, max_y),
+        color,
+        special_marker
+        );
 }
 
 void cc_bitmap_stroke_polygon(
@@ -547,6 +562,24 @@ void cc_bitmap_stroke_polygon(
                 color
         );
     }
+}
+
+void cc_bitmap_fill_polygon(
+        CcBitmap* dst,
+        CcCoord* points,
+        int n,
+        uint32_t color
+        )
+{
+    uint32_t special_marker = 0x12345678;
+    cc_bitmap_stroke_polygon(dst, points, n, 1, 1, special_marker);
+
+    cc_fill_even_odd_(
+        dst,
+        cc_rect_around_points(points, n),
+        color,
+        special_marker
+        );
 }
 
 void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
@@ -602,23 +635,8 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
 
         int loc = x + y * W;
 
-        if (x < min_x)
-        {
-            min_x = x;
-        }
-        else if (x > max_x)
-        {
-            max_x = x;
-        }
-
-        if (y < min_y)
-        {
-            min_y = y;
-        }
-        else if (y > max_y)
-        {
-            max_y = y;
-        }
+        extend_interval(x, &min_x, &max_x);
+        extend_interval(y, &min_y, &max_y);
 
 
         if (0 <= x - 1 && b->data[loc - 1] == old_color)
@@ -631,7 +649,6 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
             // to avoid double counting.
             b->data[loc - 1] = new_color;
         }
-
 
         if (x + 1 < W && b->data[loc + 1] == old_color)
         {
@@ -665,13 +682,7 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
 
     free(queue);
 
-    CcRect rect = {
-        min_x, 
-        min_y,
-        max_x - min_x + 1,
-        max_y - min_y + 1
-    };
-    return rect;
+    return cc_rect_extrema(min_x, min_y, max_x, max_y);
 }
 
 void cc_bitmap_invert_colors(CcBitmap* bitmap)

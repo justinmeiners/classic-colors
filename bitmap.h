@@ -35,7 +35,7 @@ typedef struct
 
 
 static inline
-CcRect cc_rect(const CcBitmap* b)
+CcRect cc_bitmap_rect(const CcBitmap* b)
 {
     CcRect r = {
         0, 0, b->w, b->h
@@ -46,17 +46,16 @@ CcRect cc_rect(const CcBitmap* b)
 static inline
 uint32_t cc_bitmap_get(const CcBitmap* b, int x, int y, uint32_t bg_color)
 {
-    if (!cc_rect_contains(cc_rect(b), x, y)) return bg_color;
+    if (!cc_rect_contains(cc_bitmap_rect(b), x, y)) return bg_color;
     return b->data[x + y * b->w];
 }
 
 static inline
 void cc_bitmap_set(CcBitmap* b, int x, int y, uint32_t color)
 {
-    if (!cc_rect_contains(cc_rect(b), x, y)) return;
+    if (!cc_rect_contains(cc_bitmap_rect(b), x, y)) return;
     b->data[x + y * b->w] = color;
 }
-
 
 void cc_bitmap_clear(CcBitmap* b, uint32_t color);
 
@@ -118,6 +117,13 @@ void cc_bitmap_stroke_polygon(
         int n,
         int closed,
         int width,
+        uint32_t color
+        );
+
+void cc_bitmap_fill_polygon(
+        CcBitmap* dst,
+        CcCoord* points,
+        int n,
         uint32_t color
         );
 

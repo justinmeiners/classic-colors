@@ -402,15 +402,29 @@ void settle_polygon_(PaintContext* ctx)
     if (ctx->polygon_count > 0)
     {
         CcBitmap* b = ctx->layers[LAYER_MAIN].bitmaps;
-        cc_bitmap_stroke_polygon(
-                b, 
-                ctx->polygon_points,
-                ctx->polygon_count, 
-                1,
-                ctx->line_width,
-                fg_color_(ctx)
-                );
 
+       if (ctx->shape_flags & SHAPE_FILL)
+        {
+            printf("FILLING\n");
+            cc_bitmap_fill_polygon(
+                    b, 
+                    ctx->polygon_points,
+                    ctx->polygon_count, 
+                    shape_fill_color_(ctx)
+                    );
+        }
+        if (ctx->shape_flags & SHAPE_STROKE)
+        {
+            cc_bitmap_stroke_polygon(
+                    b, 
+                    ctx->polygon_points,
+                    ctx->polygon_count, 
+                    1,
+                    ctx->line_width,
+                    shape_stroke_color_(ctx)
+                    );
+        }
+        
         CcRect r = cc_rect_around_points(ctx->polygon_points, ctx->polygon_count);
         r = cc_rect_pad(r, ctx->line_width, ctx->line_width);
         paint_undo_save(ctx, r.x, r.y, r.w, r.h);

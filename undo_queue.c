@@ -80,7 +80,7 @@ UndoPatch* undo_patch_create(const CcBitmap* src, CcRect r)
     patch->next = NULL;
     patch->data_size = 0;
 
-    if (cc_rect_equal(r, cc_rect(src)))
+    if (cc_rect_equal(r, cc_bitmap_rect(src)))
     {
         // full image (replay checkpoint)
         patch->full_image = 1;
@@ -157,7 +157,7 @@ void cc_undo_queue_trim(CcUndoQueue* q, int max_undos)
     assert(last_full);
 
     CcBitmap* new_canvas = undo_replay_(last_full, end);
-    UndoPatch* new_patch = undo_patch_create(new_canvas, cc_rect(new_canvas));
+    UndoPatch* new_patch = undo_patch_create(new_canvas, cc_bitmap_rect(new_canvas));
     assert(new_patch->full_image);
     new_patch->next = end;
 
