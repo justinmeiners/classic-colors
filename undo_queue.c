@@ -105,14 +105,14 @@ void undo_patch_destroy(UndoPatch* patch)
 }
 
 
-void undo_queue_init(UndoQueue* q)
+void cc_undo_queue_init(CcUndoQueue* q)
 {
     q->last_undo = NULL;
     q->first_undo = NULL;
     q->undo_count = 0;
 }
 
-void undo_queue_clear(UndoQueue* q)
+void cc_undo_queue_clear(CcUndoQueue* q)
 {
     UndoPatch* it = q->first_undo;
 
@@ -127,7 +127,7 @@ void undo_queue_clear(UndoQueue* q)
     q->first_undo = NULL;
 }
 
-void undo_queue_trim(UndoQueue* q, int max_undos)
+void cc_undo_queue_trim(CcUndoQueue* q, int max_undos)
 {
     assert(max_undos > 0);
 
@@ -167,7 +167,7 @@ void undo_queue_trim(UndoQueue* q, int max_undos)
     q->undo_count = n + 1;
 }
 
-void undo_queue_push(UndoQueue* q, UndoPatch* patch)
+void cc_undo_queue_push(CcUndoQueue* q, UndoPatch* patch)
 {
     // place on end of stack 
     if (q->last_undo)
@@ -190,19 +190,19 @@ void undo_queue_push(UndoQueue* q, UndoPatch* patch)
     }
 }
 
-int undo_queue_can_undo(UndoQueue* q)
+int cc_undo_queue_can_undo(CcUndoQueue* q)
 {
     return q->first_undo && (q->first_undo != q->last_undo);
 }
 
-int undo_queue_can_redo(UndoQueue* q)
+int cc_undo_queue_can_redo(CcUndoQueue* q)
 {
     return q->last_undo && q->last_undo->next;
 }
 
-void undo_queue_undo(UndoQueue* q, CcLayer* target)
+void cc_undo_queue_undo(CcUndoQueue* q, CcLayer* target)
 {
-    if (!undo_queue_can_undo(q))
+    if (!cc_undo_queue_can_undo(q))
     {
         return;
     }
@@ -223,9 +223,9 @@ void undo_queue_undo(UndoQueue* q, CcLayer* target)
     if (DEBUG_LOG) printf("undo_count %d\n", q->undo_count);
 }
 
-void undo_queue_redo(UndoQueue* q, CcLayer* target)
+void cc_undo_queue_redo(CcUndoQueue* q, CcLayer* target)
 {
-    if (!undo_queue_can_redo(q))
+    if (!cc_undo_queue_can_redo(q))
     {
         return;
     }

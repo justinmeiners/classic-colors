@@ -182,7 +182,7 @@ typedef struct
     int polygon_count;
     int polygon_capacity;
 
-    UndoQueue undo;
+    CcUndoQueue undo;
 
     char open_file_path[OS_PATH_MAX];
 } PaintContext;

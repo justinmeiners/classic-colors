@@ -40,19 +40,19 @@ typedef struct
     int undo_count;
     UndoPatch* last_undo;
     UndoPatch* first_undo;
-} UndoQueue;
+} CcUndoQueue;
 
-void undo_queue_init(UndoQueue* q);
+void cc_undo_queue_init(CcUndoQueue* q);
 
-void undo_queue_clear(UndoQueue* q);
+void cc_undo_queue_clear(CcUndoQueue* q);
 
-void undo_queue_trim(UndoQueue* q, int max_undos);
-void undo_queue_push(UndoQueue* q, UndoPatch* patch);
+void cc_undo_queue_trim(CcUndoQueue* q, int max_undos);
+void cc_undo_queue_push(CcUndoQueue* q, UndoPatch* patch);
 
-int undo_queue_can_undo(UndoQueue* q);
-int undo_queue_can_redo(UndoQueue* q);
+int cc_undo_queue_can_undo(CcUndoQueue* q);
+int cc_undo_queue_can_redo(CcUndoQueue* q);
 
-void undo_queue_undo(UndoQueue* q, CcLayer* target);
-void undo_queue_redo(UndoQueue* q, CcLayer* target);
+void cc_undo_queue_undo(CcUndoQueue* q, CcLayer* target);
+void cc_undo_queue_redo(CcUndoQueue* q, CcLayer* target);
 
 #endif
