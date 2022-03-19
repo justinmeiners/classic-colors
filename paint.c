@@ -518,7 +518,7 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
             if (k + 1 > ctx->polygon_capacity)
             {
                 int n = MAX(16, ctx->polygon_capacity * 2);
-                ctx->polygon_points = realloc(ctx->polygon_points, sizeof(int) * n);
+                ctx->polygon_points = realloc(ctx->polygon_points, sizeof(CcCoord) * n);
                 ctx->polygon_capacity = n;
             }
 
