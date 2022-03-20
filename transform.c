@@ -1,7 +1,7 @@
 #include <assert.h>
 #include "transform.h"
 
-CcRect cc_rect_around_points(CcCoord* points, int n)
+CcRect cc_rect_around_points(const CcCoord* points, int n)
 {
     assert(n > 0);
     int min_x = points[0].x;

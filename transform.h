@@ -82,6 +82,23 @@ void extend_interval(int x, int* lower, int* upper)
 }
 
 static inline
+int interval_clamp(int x, int lower, int upper)
+{
+    if (x < lower)
+    {
+        return lower;
+    }
+    else if (x > upper)
+    {
+        return upper;
+    }
+    else
+    {
+        return x;
+    }
+}
+
+static inline
 int cc_rect_intersect(CcRect a, CcRect b, CcRect* out)
 {
     int intersects = intersect_half_open(a.x, a.x + a.w, b.x, b.x + b.w, &out->x, &out->w)
@@ -116,7 +133,7 @@ CcRect cc_rect_extrema(int min_x, int min_y, int max_x, int max_y)
     return result;
 }
 
-CcRect cc_rect_around_points(CcCoord* points, int n);
+CcRect cc_rect_around_points(const CcCoord* points, int n);
 CcRect cc_rect_pad(CcRect r, int pad_w, int pad_h);
 
 void align_line_to_45_angle(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y);

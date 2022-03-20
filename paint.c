@@ -469,6 +469,13 @@ void redraw_polygon_(PaintContext* ctx)
             );
 }
 
+static
+void min_to_line_(PaintContext* ctx, int x, int y)
+{
+    extend_interval(x, &ctx->tool_min_x, &ctx->tool_max_x);
+    extend_interval(y, &ctx->tool_min_y, &ctx->tool_max_y);
+}
+
 void paint_tool_down(PaintContext* ctx, int x, int y, int button)
 {
     ctx->mouse_button = button;
@@ -712,12 +719,7 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
     }
     ctx->tool_x = x;
     ctx->tool_y = y;
-
-    ctx->tool_min_x = MIN(x, ctx->tool_min_x);
-    ctx->tool_max_x = MAX(x, ctx->tool_max_x);
-
-    ctx->tool_min_y = MIN(y, ctx->tool_min_y);
-    ctx->tool_max_y = MAX(y, ctx->tool_max_y);
+    min_to_line_(ctx, x, y);
 }
 
 
@@ -747,13 +749,6 @@ void push_undo_stroke_(PaintContext* ctx, int radius)
     r = cc_rect_pad(r, radius, radius);
     cc_rect_intersect(r, cc_layer_rect(l), &r);
     paint_undo_save(ctx, r.x, r.y, r.w, r.h);
-}
-
-static
-void min_to_line_(PaintContext* ctx, int x, int y)
-{
-    extend_interval(x, &ctx->tool_min_x, &ctx->tool_max_x);
-    extend_interval(y, &ctx->tool_min_y, &ctx->tool_max_y);
 }
 
 void paint_tool_up(PaintContext* ctx, int x, int y, int button)

@@ -113,7 +113,7 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
 
 void cc_bitmap_stroke_polygon(
         CcBitmap* dst,
-        CcCoord* points,
+        const CcCoord* points,
         int n,
         int closed,
         int width,
@@ -122,7 +122,7 @@ void cc_bitmap_stroke_polygon(
 
 void cc_bitmap_fill_polygon(
         CcBitmap* dst,
-        CcCoord* points,
+        const CcCoord* points,
         int n,
         uint32_t color
         );

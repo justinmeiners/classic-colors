@@ -530,7 +530,7 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
 
 void cc_bitmap_stroke_polygon(
         CcBitmap* dst,
-        CcCoord* points,
+        const CcCoord* points,
         int n,
         int closed,
         int width,
@@ -564,16 +564,103 @@ void cc_bitmap_stroke_polygon(
     }
 }
 
-static int int_compare_(const void *ap, const void *bp)
+static int polygon_point_classify_extrema_(CcCoord before, CcCoord middle, CcCoord after)
 {
-    const int* a = ap;
-    const int* b = bp;
-    return *a - *b;
+    if (before.y <= middle.y && after.y <= middle.y)
+    {
+        return 1;
+    }
+    else if (before.y >= middle.y && after.y >= middle.y)
+    {
+        return -1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+static void polygon_classify_points_(const CcCoord* points, int n, int* classification)
+{
+    for (int i = 0; i < n; ++i)
+    {
+        CcCoord before = points[(i - 1) % n];
+        CcCoord middle = points[i];
+        CcCoord after = points[(i + 1) % n];
+
+        classification[i] = polygon_point_classify_extrema_(before, middle, after);
+        printf("%d\n", classification[i]);
+    }
+}
+
+static int intersect_scanline_(CcCoord a, CcCoord b, int y, int *out_x)
+{
+    if ( (y < a.y && y < b.y) ||
+         (y > a.y && y > b.y) ) return 0;
+
+    if (y == a.y)
+    {
+        *out_x = a.x;
+        return 1;
+    }
+    else if (y == b.y)
+    {
+        *out_x = b.x;
+        return 1;
+    }
+
+    int inv_m = (b.x - a.x) * 10000 / (b.y - a.y);
+    int fy = y - a.y;
+    int fx = (fy * inv_m) / 10000;
+
+    *out_x = a.x + fx;
+    return 1;
+}
+
+typedef struct
+{
+    int x;
+    int duplicate;
+} ScanLineHit;
+
+static int hit_compare_(const void *ap, const void *bp)
+{
+    const ScanLineHit* a = ap;
+    const ScanLineHit* b = bp;
+    return a->x - b->x;
+}
+
+static int remove_duplicate_hits_(ScanLineHit* hits, int k)
+{
+    if (k == 5 || k == 3)
+    {
+        for (int m = 0; m < k; ++m) printf("%d %d\n", hits[m].x, hits[m].duplicate);
+    }
+
+    int i = 0;
+    int j = 0;
+
+    while (i != k)
+    {
+        hits[j] = hits[i];
+        ++j;
+
+        if (i + 1 < k && hits[i].x == hits[i + 1].x)
+        {
+            if (hits[i].duplicate)
+            {
+                hits[j] = hits[i];
+                ++j;
+            }
+            ++i;
+        }
+        ++i;
+    }
+    return j;
 }
 
 void cc_bitmap_fill_polygon(
         CcBitmap* dst,
-        CcCoord* points,
+        const CcCoord* points,
         int n,
         uint32_t color
         )
@@ -581,54 +668,57 @@ void cc_bitmap_fill_polygon(
     CcRect rect = cc_rect_around_points(points, n);
     if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
 
-    int* intersections = malloc(sizeof(int) * n);
+    int* classification = malloc(sizeof(int) * n);
+    polygon_classify_points_(points, n, classification);
 
+    ScanLineHit* hits = malloc(sizeof(ScanLineHit) * n);
     for (int y = rect.y; y < rect.y + rect.h; ++y)
     {
         int k = 0;
         for (int i = 0; i < n; ++i)
         {
-            CcCoord a = points[i];
-            CcCoord b = points[(i + 1) % n];
+            CcCoord start = points[i];
+            CcCoord end = points[(i + 1) % n];
 
-            if (y < a.y && y < b.y) continue;
-            if (y > a.y && y > b.y) continue;
-            assert(a.y != b.y);
+            int x;
+            if (!intersect_scanline_(start, end, y, &x)) continue;
 
-            int inv_m = (b.x - a.x) * 10000 / (b.y - a.y);
-            int fy = y - a.y;
-            int fx = (fy * inv_m) / 10000;
-
-            intersections[k] = a.x + fx;
-            ++k;
-        }
-
-        qsort(intersections, k, sizeof(int), int_compare_);
-        
-        uint32_t* data = dst->data + dst->w * y;
-
-        int counter = 1;
-        int start = intersections[0];
-        for (int i = 1; i < k; ++i)
-        {
-            int end = intersections[i];
-
-            if (end - start > 1)
+            if (y == start.y && x == start.x)
             {
-                if (counter % 2 == 1)
-                {
-                    for (int j = start; j <= end; ++j)
-                        data[j] = color;
-                }
-
-                counter += 1;
+                hits[k].duplicate = (classification[i] == 0) ? 0 : 1;
+            }
+            else if (y == end.y && x == end.x)
+            {
+                hits[k].duplicate = (classification[(i + 1) % n] == 0) ? 0 : 1;
+            }
+            else
+            {
+                hits[k].duplicate = 1;
             }
 
-            start = end;
+            hits[k].x = x;
+            ++k;
+        }
+        printf("before %d\n", k);
+        qsort(hits, k, sizeof(ScanLineHit), hit_compare_);
+        k = remove_duplicate_hits_(hits, k);
+        printf("after %d\n", k);
+
+        uint32_t* data = dst->data + dst->w * y;
+
+        int i = 0;
+        while (i + 1 < k)
+        {
+            int start = interval_clamp(hits[i].x, rect.x, rect.x + rect.w);
+            int end = interval_clamp(hits[i + 1].x, rect.x, rect.x + rect.w);
+
+            for (int j = start; j < end; ++j) data[j] = color;
+            i += 2;
         }
     }
 
-    free(intersections);
+    free(classification);
+    free(hits);
 }
 
 void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
