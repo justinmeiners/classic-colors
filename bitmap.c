@@ -18,8 +18,6 @@
 #include <assert.h>
 #include "bitmap.h"
 
-#define SWAP(x_, y_, T) do { T SWAP = x_; x_ = y_; y_ = SWAP; } while (0)
-
 void cc_bitmap_clear(CcBitmap* b, uint32_t color)
 {
     int N = b->w * b->h;
@@ -202,51 +200,65 @@ void cc_bitmap_blit_unsafe(
     { \
         if (x1 > x2) \
         { \
-            sx = x2; \
-            ex = x1; \
-            sy = y2; \
-            ey = y1; \
+            sx = x2; ex = x1; \
+            sy = y2; ey = y1; \
         } \
         else \
         { \
-            sx = x1; \
-            ex = x2; \
-            sy = y1; \
-            ey = y2; \
+            sx = x1; ex = x2; \
+            sy = y1; ey = y2; \
         } \
-        int w = ex - sx; \
-        m = ((ey - sy) * 10000) / w; \
+        int delta_x = ex - sx; \
+        int delta_y = ey - sy; \
+        int dy = delta_y > 0 ? 1 : -1; \
+        delta_y *= dy; \
+        int D = 2 * delta_y - delta_x; \
+        y = sy; \
         for (x = sx; x <= ex; ++x) \
         { \
-            index = x - sx; \
-            y = sy + ((x - sx) * m) / 10000; \
             func; \
+            if (D > 0) \
+            { \
+                y += dy; \
+                D = D + 2 * (delta_y - delta_x); \
+            } \
+            else \
+            { \
+                D += 2 * delta_y; \
+            } \
         }  \
     } \
     else \
     { \
         if (y1 > y2) \
         { \
-            sx = x2; \
-            ex = x1; \
-            sy = y2; \
-            ey = y1; \
+            sx = x2; ex = x1; \
+            sy = y2; ey = y1; \
         } \
         else \
         { \
-            sx = x1; \
-            ex = x2; \
-            sy = y1; \
-            ey = y2; \
+            sx = x1; ex = x2; \
+            sy = y1; ey = y2; \
         } \
-        int h = ey - sy; \
-        m = ((ex - sx) * 10000) / h; \
+        int delta_x = ex - sx; \
+        int delta_y = ey - sy; \
+        int dx = delta_x > 0 ? 1 : -1; \
+        delta_x *= dx; \
+        int D = 2 * delta_x - delta_y; \
+        x = sx; \
         for (y = sy; y <= ey; ++y) \
         { \
-            index = y - sy; \
-            x = sx + ((y - sy) * m) / 10000; \
             func; \
-        } \
+            if (D > 0) \
+            { \
+                x += dx; \
+                D = D + 2 * (delta_x - delta_y); \
+            } \
+            else \
+            { \
+                D += 2 * delta_x; \
+            } \
+        }  \
     } \
 } \
  
@@ -322,12 +334,24 @@ void cc_bitmap_interp_circle(CcBitmap* b, int x1, int y1, int x2, int y2, int ra
 
 void cc_bitmap_interp_dotted(CcBitmap* b, int x1, int y1, int x2, int y2, uint32_t color)
 {
-    BITMAP_DRAW_LINE(
-            if (index % 8 < 4)
-            {
-                cc_bitmap_set(b, x, y, color);
-            }
-    );
+    if (abs(x2 - x1) > abs(y2 - y1))
+    {
+        BITMAP_DRAW_LINE(
+                if (x % 8 < 4)
+                {
+                    cc_bitmap_set(b, x, y, color);
+                }
+        );
+    }
+    else
+    {
+        BITMAP_DRAW_LINE(
+                if (y % 8 < 4)
+                {
+                    cc_bitmap_set(b, x, y, color);
+                }
+        );
+    }
 }
 
 
@@ -522,7 +546,7 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
 
     cc_fill_even_odd_(
         dst,
-        cc_rect_extrema(min_x, min_y, max_x, max_y),
+        cc_rect_from_extrema(min_x, min_y, max_x, max_y),
         color,
         special_marker
         );
@@ -712,7 +736,7 @@ void cc_bitmap_fill_polygon(
             int start = interval_clamp(hits[i].x, rect.x, rect.x + rect.w);
             int end = interval_clamp(hits[i + 1].x, rect.x, rect.x + rect.w);
 
-            for (int j = start; j < end; ++j) data[j] = color;
+            for (int j = start; j <= end; ++j) data[j] = color;
             i += 2;
         }
     }
@@ -777,7 +801,6 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
         extend_interval(x, &min_x, &max_x);
         extend_interval(y, &min_y, &max_y);
 
-
         if (0 <= x - 1 && b->data[loc - 1] == old_color)
         {
             back->x = x - 1;
@@ -821,7 +844,7 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
 
     free(queue);
 
-    return cc_rect_extrema(min_x, min_y, max_x, max_y);
+    return cc_rect_from_extrema(min_x, min_y, max_x, max_y);
 }
 
 void cc_bitmap_invert_colors(CcBitmap* bitmap)

@@ -441,9 +441,7 @@ void settle_polygon_(PaintContext* ctx)
 void paint_set_tool(PaintContext* ctx, PaintTool tool)
 {
     if (ctx->tool == TOOL_POLYGON)
-    {
         settle_polygon_(ctx);
-    }
 
     if (tool != ctx->tool)
     {
@@ -470,7 +468,7 @@ void redraw_polygon_(PaintContext* ctx)
 }
 
 static
-void min_to_line_(PaintContext* ctx, int x, int y)
+void update_tool_min_(PaintContext* ctx, int x, int y)
 {
     extend_interval(x, &ctx->tool_min_x, &ctx->tool_max_x);
     extend_interval(y, &ctx->tool_min_y, &ctx->tool_max_y);
@@ -597,8 +595,10 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
 
 void paint_tool_move(PaintContext* ctx, int x, int y)
 {
-    CcBitmap* b = ctx->layers[LAYER_MAIN].bitmaps;
+    extend_interval(x, &ctx->tool_min_x, &ctx->tool_max_x);
+    extend_interval(y, &ctx->tool_min_y, &ctx->tool_max_y);
 
+    CcBitmap* b = ctx->layers[LAYER_MAIN].bitmaps;
     switch (ctx->tool)
     {
         case TOOL_PENCIL:
@@ -628,7 +628,7 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
         {
             if (ctx->tool_force_align)
             {
-                align_line_to_45_angle(ctx->line_x, ctx->line_y, x, y, &x, &y);
+                cc_line_align_to_45(ctx->line_x, ctx->line_y, x, y, &x, &y);
             }
 
             CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
@@ -719,9 +719,8 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
     }
     ctx->tool_x = x;
     ctx->tool_y = y;
-    min_to_line_(ctx, x, y);
+    update_tool_min_(ctx, x, y);
 }
-
 
 #define SPRAY_DENSITY 10
 
@@ -741,9 +740,23 @@ static
 void push_undo_stroke_(PaintContext* ctx, int radius)
 {
     const CcLayer* l = ctx->layers + LAYER_MAIN;
-    CcRect r = cc_rect_extrema(
+    CcRect r = cc_rect_from_extrema(
             ctx->tool_min_x, ctx->tool_min_y,
             ctx->tool_max_x, ctx->tool_max_y
+            );
+
+    r = cc_rect_pad(r, radius, radius);
+    cc_rect_intersect(r, cc_layer_rect(l), &r);
+    paint_undo_save(ctx, r.x, r.y, r.w, r.h);
+}
+
+static
+void push_undo_box_(PaintContext* ctx, int end_x, int end_y, int radius)
+{
+    const CcLayer* l = ctx->layers + LAYER_MAIN;
+    CcRect r = cc_rect_around_corners(
+            ctx->line_x, ctx->line_y,
+            end_x, end_y 
             );
 
     r = cc_rect_pad(r, radius, radius);
@@ -796,22 +809,18 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
         case TOOL_LINE:
             if (ctx->tool_force_align)
             {
-                align_line_to_45_angle(ctx->line_x, ctx->line_y, x, y, &x, &y);
+                cc_line_align_to_45(ctx->line_x, ctx->line_y, x, y, &x, &y);
             }
 
-            min_to_line_(ctx, x, y);
             cc_layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
-
             cc_bitmap_interp_square(b, ctx->line_x, ctx->line_y, x, y, ctx->line_width, fg_color_(ctx));
-            push_undo_stroke_(ctx, ctx->line_width);
+            push_undo_box_(ctx, x, y, ctx->line_width);
             break;
         case TOOL_RECTANGLE:
             if (ctx->tool_force_align)
             {
                 align_rect_to_square(ctx->line_x, ctx->line_y, x, y, &x, &y);
             }
- 
-            min_to_line_(ctx, x, y);
             cc_layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
 
             if (ctx->shape_flags & SHAPE_FILL)
@@ -822,15 +831,13 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             {
                 cc_bitmap_stroke_rect(b, ctx->line_x, ctx->line_y, x, y, ctx->line_width, shape_stroke_color_(ctx));
             }
-            push_undo_stroke_(ctx, ctx->line_width);
+            push_undo_box_(ctx, x, y, ctx->line_width);
             break;
         case TOOL_ELLIPSE:
             if (ctx->tool_force_align)
             {
                 align_rect_to_square(ctx->line_x, ctx->line_y, x, y, &x, &y);
             }
- 
-            min_to_line_(ctx, x, y);
             cc_layer_set_bitmap(ctx->layers + LAYER_OVERLAY, NULL);
 
             if (ctx->shape_flags & SHAPE_FILL)
@@ -841,7 +848,7 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             {
                 cc_bitmap_stroke_ellipse(b, ctx->line_x, ctx->line_y, x, y, shape_stroke_color_(ctx));
             }
-            push_undo_stroke_(ctx, ctx->line_width);
+            push_undo_box_(ctx, x, y, ctx->line_width);
             break;
         case TOOL_POLYGON:
         {
@@ -851,19 +858,16 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
         case TOOL_TEXT:
             if (ctx->active_layer == LAYER_MAIN)
             {
-                min_to_line_(ctx, x, y);
-                int w = ctx->tool_max_x - ctx->tool_min_x;
-                int h = ctx->tool_max_y - ctx->tool_min_y;
-
-                if (w > 0 && h > 0)
+                CcRect rect = cc_rect_around_corners(x, y, ctx->line_x, ctx->line_y);
+                if (rect.w > 0 && rect.h > 0)
                 {
-                    CcBitmap* b = cc_bitmap_create(w, h);
+                    CcBitmap* b = cc_bitmap_create(rect.w, rect.h);
                     cc_bitmap_clear(b, COLOR_CLEAR);
 
                     CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
                     overlay->blend = COLOR_BLEND_OVERLAY;
-                    overlay->x = ctx->tool_min_x;
-                    overlay->y = ctx->tool_min_y;
+                    overlay->x = rect.x;
+                    overlay->y = rect.y;
                     overlay->font_color = ctx->fg_color;
                     cc_layer_set_bitmap(overlay, b);
                     cc_layer_set_text(overlay, NULL);
@@ -881,10 +885,8 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
 
             if (ctx->active_layer == LAYER_MAIN)
             {
-                min_to_line_(ctx, x, y);
-                int w = ctx->tool_max_x - ctx->tool_min_x;
-                int h = ctx->tool_max_y - ctx->tool_min_y;
-                paint_select(ctx, ctx->tool_min_x, ctx->tool_min_y, w, h);
+                CcRect rect = cc_rect_around_corners(x, y, ctx->line_x, ctx->line_y);
+                paint_select(ctx, rect.x, rect.y, rect.w, rect.h);
             }
             break;
         }

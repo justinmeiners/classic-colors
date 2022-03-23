@@ -14,7 +14,7 @@ CcRect cc_rect_around_points(const CcCoord* points, int n)
         extend_interval(points[i].x, &min_x, &max_x);
         extend_interval(points[i].y, &min_y, &max_y);
     }
-    return cc_rect_extrema(min_x, min_y, max_x, max_y);
+    return cc_rect_from_extrema(min_x, min_y, max_x, max_y);
 }
 
 CcRect cc_rect_pad(CcRect r, int pad_w, int pad_h)
@@ -27,7 +27,7 @@ CcRect cc_rect_pad(CcRect r, int pad_w, int pad_h)
     return r;
 }
 
-void align_line_to_45_angle(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y)
+void cc_line_align_to_45(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y)
 {
     int dx = (end_x - start_x);
     int dy = (end_y - start_y);

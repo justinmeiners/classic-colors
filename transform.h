@@ -25,6 +25,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#define SWAP(x_, y_, T) do { T SWAP = x_; x_ = y_; y_ = SWAP; } while (0)
+
 static inline
 int sign_of_int(int x) {
     return (x > 0) - (x < 0);
@@ -122,7 +124,7 @@ int cc_rect_contains(CcRect r, int x, int y)
 }
 
 static inline
-CcRect cc_rect_extrema(int min_x, int min_y, int max_x, int max_y)
+CcRect cc_rect_from_extrema(int min_x, int min_y, int max_x, int max_y)
 {
     CcRect result = {
         min_x,
@@ -133,10 +135,22 @@ CcRect cc_rect_extrema(int min_x, int min_y, int max_x, int max_y)
     return result;
 }
 
+static inline
+CcRect cc_rect_around_corners(int x1, int y1, int x2, int y2)
+{
+    if (x2 < x1) {
+        SWAP(x1, x2, int);
+    }
+    if (y2 < y1) {
+        SWAP(y1, y2, int);
+    }
+    return cc_rect_from_extrema(x1, y1, x2, y2);
+}
+
 CcRect cc_rect_around_points(const CcCoord* points, int n);
 CcRect cc_rect_pad(CcRect r, int pad_w, int pad_h);
 
-void align_line_to_45_angle(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y);
+void cc_line_align_to_45(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y);
 void align_rect_to_square(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y);
 
 // TODO: should this be an affine transform?
