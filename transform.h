@@ -147,6 +147,12 @@ CcRect cc_rect_around_corners(int x1, int y1, int x2, int y2)
     return cc_rect_from_extrema(x1, y1, x2, y2);
 }
 
+static inline
+int int_ceil(int a, int b)
+{
+    return (a / b) + (a % b != 0);
+}
+
 CcRect cc_rect_around_points(const CcCoord* points, int n);
 CcRect cc_rect_pad(CcRect r, int pad_w, int pad_h);
 

@@ -79,6 +79,15 @@ void paint_undo(PaintContext* ctx)
 
     ctx->active_layer = LAYER_MAIN;
     cc_layer_reset(ctx->layers + LAYER_OVERLAY);
+
+
+    if (ctx->polygon_count > 0)
+    {
+        free(ctx->polygon_points);
+        ctx->polygon_capacity = 0;
+        ctx->polygon_count = 0;
+        ctx->polygon_points = NULL;
+    }
 }
 
 void paint_redo(PaintContext* ctx)
@@ -851,10 +860,8 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             push_undo_box_(ctx, x, y, ctx->line_width);
             break;
         case TOOL_POLYGON:
-        {
             redraw_polygon_(ctx);
             break;
-        }
         case TOOL_TEXT:
             if (ctx->active_layer == LAYER_MAIN)
             {
@@ -880,7 +887,6 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             }
             break;
         case TOOL_SELECT_RECTANGLE:
-        {
             ctx->layers[LAYER_OVERLAY].blend = COLOR_BLEND_OVERLAY;
 
             if (ctx->active_layer == LAYER_MAIN)
@@ -889,8 +895,12 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
                 paint_select(ctx, rect.x, rect.y, rect.w, rect.h);
             }
             break;
-        }
     }
+}
+
+void paint_tool_cancel(PaintContext* ctx)
+{
+    printf("CANCEL\n");
 }
 
 int paint_w(const PaintContext* ctx)
@@ -918,12 +928,6 @@ void paint_crop(PaintContext* ctx)
         ctx->active_layer = LAYER_MAIN;
         paint_undo_save_full(ctx);
     }
-}
-
-static
-int int_ceil(int a, int b)
-{
-    return (a / b) + (a % b != 0);
 }
 
 void paint_composite(PaintContext* ctx)

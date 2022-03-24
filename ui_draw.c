@@ -179,6 +179,7 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
 
     int x, y;
     int shouldRefresh = 0;
+
     // http://xahlee.info/linux/linux_x11_mouse_button_number.html
     if (event->xbutton.button > 3) {
         return;
@@ -232,8 +233,10 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
             paint_tool_move(ctx, x, y);
             shouldRefresh = 1;
             break;
-    }
+        case KeyPress:
 
+            break;
+    }
 
     if (shouldRefresh)
     {
@@ -247,14 +250,32 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
     }
 }
 
-void ui_cb_draw_update(Widget widget, XtPointer client_data, XtPointer call_data)
+static
+void ui_cb_draw_input_(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 {
-    if (g_ready)
+    PaintContext* ctx = &g_paint_ctx;
+
+    XmDrawingAreaCallbackStruct *cbs = (XmDrawingAreaCallbackStruct*)call_data;
+    XEvent *event = cbs->event;
+    if (cbs->reason == XmCR_INPUT) 
     {
-        ui_refresh_drawing(1);
+        if (event->xany.type == KeyPress) 
+        {
+            int key_sym = XLookupKeysym(&event->xkey, 0);
+            if (key_sym == XK_Escape)
+            {
+                paint_tool_cancel(ctx);
+            }
+        }
     }
+    if (g_ready) ui_refresh_drawing(1);
 }
 
+
+void ui_cb_draw_update(Widget scrollbar, XtPointer client_data, XtPointer call_data)
+{
+    if (g_ready) ui_refresh_drawing(1);
+}
 
 static
 int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info)
@@ -301,7 +322,6 @@ Widget ui_setup_draw_area(Widget parent)
 
     draw_area = XmCreateDrawingArea(parent, "drawing_area", args, n);
 
-    XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_update, NULL);
     XtAddEventHandler(
             draw_area,
             ButtonPressMask | ButtonReleaseMask | Button1MotionMask | Button3MotionMask,
@@ -309,6 +329,8 @@ Widget ui_setup_draw_area(Widget parent)
             cb_draw_stroke_,
             NULL
             );
+    // not working for some reason
+    XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_input_, NULL);
     XtAddCallback(draw_area, XmNexposeCallback, ui_cb_draw_update, NULL);
     XtAddCallback(draw_area, XmNresizeCallback, ui_cb_draw_update, NULL);
 

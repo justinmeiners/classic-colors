@@ -605,18 +605,22 @@ static int polygon_point_classify_extrema_(CcCoord before, CcCoord middle, CcCoo
 }
 static void polygon_classify_points_(const CcCoord* points, int n, int* classification)
 {
-    for (int i = 0; i < n; ++i)
-    {
-        CcCoord before = points[(i - 1) % n];
-        CcCoord middle = points[i];
-        CcCoord after = points[(i + 1) % n];
+    CcCoord before = points[n - 1];
+    CcCoord middle = points[0];
+    CcCoord after = points[1];
+    classification[0] = polygon_point_classify_extrema_(before, middle, after);
 
+    for (int i = 1; i < n; ++i)
+    {
+        before = points[i - 1];
+        middle = points[i];
+        after = points[(i + 1) % n];
         classification[i] = polygon_point_classify_extrema_(before, middle, after);
         printf("%d\n", classification[i]);
     }
 }
 
-static int intersect_scanline_(CcCoord a, CcCoord b, int y, int *out_x)
+static int intersect_scanline_line_(CcCoord a, CcCoord b, int y, int *out_x)
 {
     if ( (y < a.y && y < b.y) ||
          (y > a.y && y > b.y) ) return 0;
@@ -682,6 +686,7 @@ static int remove_duplicate_hits_(ScanLineHit* hits, int k)
     return j;
 }
 
+// https://web.cs.ucdavis.edu/~ma/ECS175_S00/Notes/0411_b.pdf
 void cc_bitmap_fill_polygon(
         CcBitmap* dst,
         const CcCoord* points,
@@ -705,7 +710,7 @@ void cc_bitmap_fill_polygon(
             CcCoord end = points[(i + 1) % n];
 
             int x;
-            if (!intersect_scanline_(start, end, y, &x)) continue;
+            if (!intersect_scanline_line_(start, end, y, &x)) continue;
 
             if (y == start.y && x == start.x)
             {

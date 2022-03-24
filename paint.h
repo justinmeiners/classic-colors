@@ -211,6 +211,7 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button);
 void paint_tool_move(PaintContext* ctx, int x, int y);
 void paint_tool_update(PaintContext* ctx);
 void paint_tool_up(PaintContext* ctx, int x, int y, int button);
+void paint_tool_cancel(PaintContext* ctx);
 
 int paint_w(const PaintContext* ctx);
 int paint_h(const PaintContext* ctx);
