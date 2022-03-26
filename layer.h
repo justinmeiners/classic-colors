@@ -86,15 +86,12 @@ void cc_layer_resize(CcLayer* layer, int new_w, int new_h, uint32_t bg_color);
 void cc_layer_ensure_size(CcLayer* layer, int w, int h);
 
 void cc_layer_set_text(CcLayer* layer, const wchar_t* text);
-
 void cc_layer_render(CcLayer* layer);
 
 unsigned char* cc_bitmap_compress(const CcBitmap* b, size_t* out_size);
 CcBitmap* cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed_size);
 
-
 void test_text_wordwrap(void);
-
 
 void cc_text_render(
         CcBitmap* bitmap,
@@ -157,8 +154,6 @@ CcViewport cc_viewport_zoom_centered(const CcViewport* v, int new_zoom)
 
     return out;
 }
-
-
 
 #endif
 

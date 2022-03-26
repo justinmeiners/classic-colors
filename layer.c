@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <wchar.h>
 
-
 #include "layer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -138,7 +137,6 @@ void cc_layer_resize(CcLayer* layer, int new_w, int new_h, uint32_t bg_color)
 
     cc_layer_set_bitmap(layer, b);
 }
-
 
 void cc_layer_ensure_size(CcLayer* layer, int w, int h)
 {

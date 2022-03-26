@@ -524,6 +524,7 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
             ctx->line_x = x;
             ctx->line_y = y;
             break;
+        case TOOL_SELECT_POLYGON:
         case TOOL_POLYGON:
         {
             prepare_empty_overlay_(ctx);
@@ -657,11 +658,30 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
             }
             break;
         }
+        case TOOL_SELECT_POLYGON:
+        {
+            CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
+            overlay->blend = COLOR_BLEND_INVERT;
+
+            CcCoord coord = { x, y };
+            cc_polygon_add(&ctx->polygon, coord);
+            cc_bitmap_clear(overlay->bitmaps, COLOR_CLEAR);
+
+            cc_bitmap_stroke_polygon(
+                    overlay->bitmaps,
+                    ctx->polygon.points,
+                    ctx->polygon.count,
+                    0,
+                    1,
+                    COLOR_BLACK
+                    );
+            break;
+        }
         case TOOL_POLYGON:
         {
-            redraw_polygon_(ctx);
             CcCoord coord = { x, y };
             cc_polygon_update_last(&ctx->polygon, coord, ctx->tool_force_align);
+            redraw_polygon_(ctx);
             break;
         }
         case TOOL_EYE_DROPPER:
@@ -830,6 +850,12 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             }
             push_undo_box_(ctx, x, y, ctx->line_width);
             break;
+        case TOOL_SELECT_POLYGON:
+        {
+            // TODO:
+            cc_polygon_clear(&ctx->polygon);
+            break;
+        }
         case TOOL_POLYGON:
             redraw_polygon_(ctx);
             break;
