@@ -1,6 +1,43 @@
 #include <assert.h>
 #include "transform.h"
 
+CcTransform cc_transform_inverse(CcTransform t)
+{
+    double det = (t.m[0] * t.m[3] - t.m[1] * t.m[2]);
+    double s = 1.0 / det;
+
+    CcTransform inv = {
+        { s * t.m[3], s * -t.m[1], s * -t.m[2], s * t.m[0] }
+    };
+
+    return inv;
+}
+
+CcTransform cc_transform_skew(double x_angle, double y_angle)
+{
+    double c_x = cos(x_angle);
+    double s_x = sin(x_angle);
+
+    double c_y = cos(y_angle);
+    double s_y = sin(y_angle);
+
+    CcTransform t = {
+        {  c_x, s_x, -s_y, c_y }
+    };
+    return t;
+}
+
+CcTransform cc_transform_concat(CcTransform a, CcTransform b)
+{
+    CcTransform t = {
+        { a.m[0] * b.m[0] + a.m[1] * b.m[2],
+          a.m[0] * b.m[1] + a.m[1] * b.m[3],
+          a.m[2] * b.m[0] + a.m[3] * b.m[2],
+          a.m[2] * b.m[1] + a.m[3] * b.m[3],
+        }
+    };
+    return t;
+}
 
 CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A, uint32_t bg_color)
 {

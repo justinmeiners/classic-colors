@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 #include "color.h"
 
 #define PREPARE(SRC, DST) color_unpack(SRC, src_comps); color_unpack(DST, dst_comps);
