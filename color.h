@@ -30,6 +30,9 @@ typedef enum {
     COLOR_BLEND_FULL,
     // invert colors in destination
     COLOR_BLEND_INVERT,
+    // 
+    COLOR_BLEND_MULTIPLY,
+
 } CcColorBlend;
 
 
@@ -117,7 +120,14 @@ void color_blend_invert(int* src_comps, int* dst_comps)
         dst_comps[i] = ((src_comps[3] + 1) * src_comps[i] + (256 - src_comps[3]) * dst_comps[i]) >> 8;
     }
     dst_comps[3] = 0xFF;
+}
 
+static inline
+void color_blend_multiply(int* src_comps, int* dst_comps)
+{
+    // a * src + (1 -a) * dst
+    for (int i = 0; i < 4; ++i)
+        dst_comps[i] = ((src_comps[i] + 1) * dst_comps[i]) >> 8;
 }
 
 void color_blending_test();

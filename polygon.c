@@ -53,7 +53,7 @@ void cc_polygon_update_last(CcPolygon* p, CcCoord x, int align)
     p->points[k] = x;
 }
 
-CcRect cc_polygon_bounds(const CcPolygon* p)
+CcRect cc_polygon_rect(const CcPolygon* p)
 {
     return cc_rect_around_points(p->points, p->count);
 }
@@ -255,3 +255,11 @@ void cc_bitmap_fill_polygon(
     free(hits);
 }
 
+void cc_polygon_shift(CcPolygon* p, CcCoord shift)
+{
+    for (int i = 0; i < p->count; ++i)
+    {
+        p->points[i].x += shift.x;
+        p->points[i].y += shift.y;
+    }
+}

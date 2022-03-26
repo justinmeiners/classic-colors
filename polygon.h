@@ -18,7 +18,7 @@ void cc_polygon_clear(CcPolygon* p);
 
 void cc_polygon_update_last(CcPolygon* p, CcCoord x, int align);
 
-CcRect cc_polygon_bounds(const CcPolygon* p);
+CcRect cc_polygon_rect(const CcPolygon* p);
 
 void cc_bitmap_stroke_polygon(
         CcBitmap* dst,
@@ -35,5 +35,7 @@ void cc_bitmap_fill_polygon(
         int n,
         uint32_t color
         );
+
+void cc_polygon_shift(CcPolygon* p, CcCoord shift);
 
 #endif

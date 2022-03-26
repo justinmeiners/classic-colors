@@ -156,7 +156,6 @@ void cc_bitmap_blit_unsafe(
         } \
     }
 
-
     switch (blend)
     {
         case COLOR_BLEND_REPLACE:
@@ -182,6 +181,12 @@ void cc_bitmap_blit_unsafe(
         case COLOR_BLEND_INVERT:
             LOOP(
                 color_blend_invert(src_comps, dst_comps);
+                dst->data[dst_index] = color_pack(dst_comps);
+            ) 
+            break;
+        case COLOR_BLEND_MULTIPLY:
+            LOOP(
+                color_blend_multiply(src_comps, dst_comps);
                 dst->data[dst_index] = color_pack(dst_comps);
             ) 
             break;

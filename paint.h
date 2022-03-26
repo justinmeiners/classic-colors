@@ -224,6 +224,7 @@ void paint_paste(PaintContext* ctx);
 
 void paint_select_all(PaintContext* ctx);
 void paint_select(PaintContext* ctx, int x, int y, int w, int h);
+void paint_select_polygon(PaintContext* ctx);
 void paint_select_clear(PaintContext* ctx);
 
 void paint_set_color(PaintContext* ctx, uint32_t color, int fg);

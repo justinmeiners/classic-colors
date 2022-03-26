@@ -94,7 +94,7 @@ void copy_bitmap_to_ximage_(XImage* dest, const CcBitmap* src, const XVisualInfo
 #define DRAW_PADDING 64
 
 static
-void update_scroll_()
+void update_scroll_(void)
 {
     int n = 0;
     Arg args[UI_ARGS_MAX];
@@ -135,7 +135,7 @@ void update_scroll_()
 }
 
 static
-void resize_view_()
+void resize_view_(void)
 {
     int n = 0;
     Arg args[UI_ARGS_MAX];
@@ -179,7 +179,6 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
 
     int x, y;
     int shouldRefresh = 0;
-    printf("here\n");
 
     // http://xahlee.info/linux/linux_x11_mouse_button_number.html
     if (event->xbutton.button > 3) {
@@ -291,7 +290,6 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
     assert(visual_count == 1);
     *out_info = info_list[0];
     XFree(info_list);
-
 
     // 24 or 32 bit depth
     if (info_list->depth != 24 && info_list->depth != 32)
