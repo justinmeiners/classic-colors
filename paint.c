@@ -79,15 +79,7 @@ void paint_undo(PaintContext* ctx)
 
     ctx->active_layer = LAYER_MAIN;
     cc_layer_reset(ctx->layers + LAYER_OVERLAY);
-
-
-    if (ctx->polygon_count > 0)
-    {
-        free(ctx->polygon_points);
-        ctx->polygon_capacity = 0;
-        ctx->polygon_count = 0;
-        ctx->polygon_points = NULL;
-    }
+    cc_polygon_clear(&ctx->polygon);
 }
 
 void paint_redo(PaintContext* ctx)
@@ -275,16 +267,13 @@ int paint_init(PaintContext* ctx)
     ctx->bg_color = COLOR_WHITE;
     ctx->view_bg_color = COLOR_GRAY;
 
-    ctx->polygon_points = NULL;
-    ctx->polygon_count = 0;
-    ctx->polygon_capacity = 0;
-
     ctx->select_mode = SELECT_KEEP_BG;
     ctx->request_tool_timer = 0;
 
     for (int i = 0; i < LAYER_COUNT; ++i)
         cc_layer_init(ctx->layers + i, 0, 0);
 
+    cc_polygon_init(&ctx->polygon);
     cc_undo_queue_init(&ctx->undo);
     paint_open_file(ctx, NULL, NULL);
     return 1;
@@ -408,7 +397,7 @@ void settle_selection_layer_(PaintContext* ctx)
 static
 void settle_polygon_(PaintContext* ctx)
 {
-    if (ctx->polygon_count > 0)
+    if (ctx->polygon.count > 0)
     {
         CcBitmap* b = ctx->layers[LAYER_MAIN].bitmaps;
 
@@ -417,8 +406,8 @@ void settle_polygon_(PaintContext* ctx)
             printf("FILLING\n");
             cc_bitmap_fill_polygon(
                     b, 
-                    ctx->polygon_points,
-                    ctx->polygon_count, 
+                    ctx->polygon.points,
+                    ctx->polygon.count, 
                     shape_fill_color_(ctx)
                     );
         }
@@ -426,23 +415,21 @@ void settle_polygon_(PaintContext* ctx)
         {
             cc_bitmap_stroke_polygon(
                     b, 
-                    ctx->polygon_points,
-                    ctx->polygon_count, 
+                    ctx->polygon.points,
+                    ctx->polygon.count, 
                     1,
                     ctx->line_width,
                     shape_stroke_color_(ctx)
                     );
         }
-        
-        CcRect r = cc_rect_around_points(ctx->polygon_points, ctx->polygon_count);
-        r = cc_rect_pad(r, ctx->line_width, ctx->line_width);
+
+        CcRect r = cc_rect_pad(
+            cc_polygon_bounds(&ctx->polygon),
+            ctx->line_width,
+            ctx->line_width
+        );
         paint_undo_save(ctx, r.x, r.y, r.w, r.h);
-
-        free(ctx->polygon_points);
-        ctx->polygon_capacity = 0;
-        ctx->polygon_count = 0;
-        ctx->polygon_points = NULL;
-
+        cc_polygon_clear(&ctx->polygon);
         prepare_empty_overlay_(ctx);
     }
 }
@@ -468,8 +455,8 @@ void redraw_polygon_(PaintContext* ctx)
 
     cc_bitmap_stroke_polygon(
             overlay->bitmaps,
-            ctx->polygon_points,
-            ctx->polygon_count,
+            ctx->polygon.points,
+            ctx->polygon.count,
             0,
             ctx->line_width,
             fg_color_(ctx)
@@ -541,24 +528,9 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
         {
             prepare_empty_overlay_(ctx);
 
-            int k = ctx->polygon_count;
-
-            if (k + 1 > ctx->polygon_capacity)
-            {
-                int n = MAX(16, ctx->polygon_capacity * 2);
-                ctx->polygon_points = realloc(ctx->polygon_points, sizeof(CcCoord) * n);
-                ctx->polygon_capacity = n;
-            }
-
-            int points_to_add = (k == 0) ? 2 : 1;
-            for (int i = 0; i < points_to_add; ++i)
-            {
-                ctx->polygon_points[k].x = x;
-                ctx->polygon_points[k].y = y;
-                ++k;
-            }
-
-            ctx->polygon_count = k;
+            CcCoord coord = { x, y };
+            cc_polygon_add(&ctx->polygon, coord);
+            if (ctx->polygon.count == 1) cc_polygon_add(&ctx->polygon, coord);
             redraw_polygon_(ctx);
             break;
         }
@@ -687,10 +659,9 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
         }
         case TOOL_POLYGON:
         {
-            int k = ctx->polygon_count - 1;
-            ctx->polygon_points[k].x = x;
-            ctx->polygon_points[k].y = y;
             redraw_polygon_(ctx);
+            CcCoord coord = { x, y };
+            cc_polygon_update_last(&ctx->polygon, coord, ctx->tool_force_align);
             break;
         }
         case TOOL_EYE_DROPPER:

@@ -1,82 +1,78 @@
 #include <assert.h>
 #include "transform.h"
 
-CcRect cc_rect_around_points(const CcCoord* points, int n)
-{
-    assert(n > 0);
-    int min_x = points[0].x;
-    int min_y = points[0].y;
-    int max_x = min_x;
-    int max_y = min_y;
 
-    for (int i = 1; i < n; ++i)
+CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A, uint32_t bg_color)
+{
+    double epsilon = 0.0001;
+    Vec2 corners[4];
+    corners[0].x = epsilon;
+    corners[0].y = epsilon;
+
+    corners[1].x = (double)src->w - epsilon;
+    corners[1].y = epsilon;
+
+    corners[2].x = (double)src->w - epsilon;
+    corners[2].y = (double)src->h - epsilon;
+
+    corners[3].x = epsilon;
+    corners[3].y = (double)src->h - epsilon;
+
+
+    Vec2 min = cc_transform_apply(A, corners[0]);
+    Vec2 max = min; 
+
+    for (int i = 1; i < 4; ++i)
     {
-        extend_interval(points[i].x, &min_x, &max_x);
-        extend_interval(points[i].y, &min_y, &max_y);
+        Vec2 out_corner = cc_transform_apply(A, corners[i]);
+
+        min.x = MIN(out_corner.x, min.x);
+        min.y = MIN(out_corner.y, min.y);
+
+        max.x = MAX(out_corner.x, max.x);
+        max.y = MAX(out_corner.y, max.y);
     }
-    return cc_rect_from_extrema(min_x, min_y, max_x, max_y);
-}
 
-CcRect cc_rect_pad(CcRect r, int pad_w, int pad_h)
-{
-    r.x -= pad_w;
-    r.y -= pad_h;
+    min.x = floor(min.x);
+    min.y = floor(min.y);
+    max.x = ceil(max.x);
+    max.y = ceil(max.y);
 
-    r.w += 2 * pad_w;
-    r.h += 2 * pad_h;
-    return r;
-}
+    int w = (int)(max.x - min.x);
+    int h = (int)(max.y - min.y);
 
-void cc_line_align_to_45(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y)
-{
-    int dx = (end_x - start_x);
-    int dy = (end_y - start_y);
-
-    int best_x = 0;
-    int best_y = 0;
-    int best = 0;
-
-    for (int i = -1; i <= 1; ++i)
+    if (!dst)
     {
-        for (int j = -1; j <= 1; ++j)
+        dst = cc_bitmap_create(w, h);
+    }
+
+    // A: R^n -> R^m
+    // Iterate each pixel in the destination
+    // and find it's preimage under A to know its previous color.
+    CcTransform inverse = cc_transform_inverse(A);
+
+    // center pixels
+
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
         {
-            if (i == 0 && j == 0) { continue; }
+            Vec2 image;
+            image.x = min.x + (double)x + 0.5;
+            image.y = min.y + (double)y + 0.5;
 
-            int dot = i * dx + j * dy;
 
-            if (i != 0 && j != 0)
-            {
-                // sqrt(2) ~= 1.41
-                dot = (dot * 100) / 141;
-            }
+            // I explored adding the derivative instead of transforming each time.
+            // but, lots of small additions accumlate error and this isn't a big deal for a 2x2 matrix.
+            Vec2 pre_image = cc_transform_apply(inverse, image);
 
-            if (dot > best)
-            {
-                best_x = i;
-                best_y = j;
-                best = dot;
-            }
+            int src_x = (int)floor(pre_image.x);
+            int src_y = (int)floor(pre_image.y);
+
+            //printf("image: %f, %f pre: %f, %f\n", image.x, image.y, pre_image.x, pre_image.y);
+            dst->data[x + y * dst->w] = cc_bitmap_get(src, src_x, src_y, bg_color);
         }
     }
-
-    if (best_x != 0 && best_y != 0)
-    {
-        // one more time
-        best = (best * 100) / 141;
-    }
-    *out_x = start_x + best_x * best;
-    *out_y = start_y + best_y * best;
+    return dst;
 }
-
-void align_rect_to_square(int start_x, int start_y, int end_x, int end_y, int* out_x, int* out_y)
-{
-    int dx = (end_x - start_x);
-    int dy = (end_y - start_y);
-
-    int side_length = MIN(abs(dx), abs(dy));
-
-    *out_x = start_x + sign_of_int(dx) * side_length;
-    *out_y = start_y + sign_of_int(dy) * side_length;
-}
-
 

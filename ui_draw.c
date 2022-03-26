@@ -179,6 +179,7 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
 
     int x, y;
     int shouldRefresh = 0;
+    printf("here\n");
 
     // http://xahlee.info/linux/linux_x11_mouse_button_number.html
     if (event->xbutton.button > 3) {
@@ -253,6 +254,7 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
 static
 void ui_cb_draw_input_(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 {
+    printf("YO\n");
     PaintContext* ctx = &g_paint_ctx;
 
     XmDrawingAreaCallbackStruct *cbs = (XmDrawingAreaCallbackStruct*)call_data;
@@ -324,13 +326,13 @@ Widget ui_setup_draw_area(Widget parent)
 
     XtAddEventHandler(
             draw_area,
-            ButtonPressMask | ButtonReleaseMask | Button1MotionMask | Button3MotionMask,
-            False,
+            KeyReleaseMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | Button1MotionMask | Button3MotionMask,
+            True,
             cb_draw_stroke_,
             NULL
             );
     // not working for some reason
-    XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_input_, NULL);
+    //XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_input_, NULL);
     XtAddCallback(draw_area, XmNexposeCallback, ui_cb_draw_update, NULL);
     XtAddCallback(draw_area, XmNresizeCallback, ui_cb_draw_update, NULL);
 

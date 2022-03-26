@@ -23,7 +23,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "transform.h"
+#include "plane.h"
 #include "color.h"
 
 typedef struct
@@ -111,22 +111,6 @@ void cc_bitmap_fill_rect(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t
 void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color);
 void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color);
 
-void cc_bitmap_stroke_polygon(
-        CcBitmap* dst,
-        const CcCoord* points,
-        int n,
-        int closed,
-        int width,
-        uint32_t color
-        );
-
-void cc_bitmap_fill_polygon(
-        CcBitmap* dst,
-        const CcCoord* points,
-        int n,
-        uint32_t color
-        );
-
 void cc_bitmap_invert_colors(CcBitmap* bitmap);
 
 void cc_bitmap_rotate_90(const CcBitmap* src, CcBitmap* dst);
@@ -138,7 +122,6 @@ void cc_bitmap_zoom_general(const CcBitmap* src, CcBitmap* dst, int zoom);
 void cc_bitmap_zoom_power_of_2(const CcBitmap* src, CcBitmap* dst, int zoom_power);
 
 CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color);
-CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A, uint32_t bg_color);
 
 
 #endif

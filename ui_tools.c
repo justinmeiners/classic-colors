@@ -36,7 +36,8 @@
 #include "icons/icon_ellipse.xpm"
 #include "icons/icon_airbrush.xpm"
 #include "icons/icon_text.xpm"
-#include "icons/icon_polygon_select.xpm"
+#include "icons/icon_polygon.xpm"
+#include "icons/icon_polygon_select2.xpm"
 
 typedef enum
 {
@@ -253,14 +254,14 @@ ToolInfo g_tools[] = {
         OPTION_ERASER_WIDTH,
         "Eraser",
         icon_eraser,
-        "Click and drag to erase portions of the image."
+        "Click and drag to erase portions of the image with the background color."
     },
     {
         TOOL_EYE_DROPPER, 
         OPTION_NONE,
         "Eyedropper",
         icon_eye_dropper,
-        "Click to select foreground or background color from a pixel in the image."
+        "Select foreground (left-click) or background (right-click) color from a pixel in the image."
     },
     {
         TOOL_SPRAY_CAN,
@@ -272,16 +273,16 @@ ToolInfo g_tools[] = {
     {
         TOOL_PAINT_BUCKET,
         OPTION_BUCKET_MODE,
-        "Paint Bucket",
+        "Paint bucket",
         icon_paint_bucket,
         "Click to fill a connected region (neighbors) or to replace a color in the entire image (everywhere)."
     },
     { 
         TOOL_SELECT_RECTANGLE,
         OPTION_SELECT_MODE,
-        "Select Area",
+        "Select rectangle",
         icon_select_rectangle,
-        "Click and drag to select a region. Click and drag the selection to move it."
+        "Click and drag to select a rectangular region. The selection can be moved with click and drag."
     },
     {
         TOOL_MAGNIFIER, 
@@ -295,7 +296,7 @@ ToolInfo g_tools[] = {
         OPTION_NONE,
         "Test",
         icon_text,
-        "Click and drag to create a textbox. Configure text and font in the text window."
+        "Click and drag to create a textbox. Write text and configure appearence in the text window."
     },
     { 
         TOOL_LINE,
@@ -309,7 +310,7 @@ ToolInfo g_tools[] = {
         OPTION_SHAPE_FLAGS,
         "Rectangle",
         icon_rectangle,
-        "Click and drag to make a rectangle from start to end. Hold shift to snap to square."
+        "Click and drag to draw a rectangle from start to end. Hold shift to snap to square."
     },
     { 
         TOOL_ELLIPSE,
@@ -322,9 +323,16 @@ ToolInfo g_tools[] = {
         TOOL_POLYGON,
         OPTION_SHAPE_FLAGS,
         "Polygon",
-        icon_polygon_select,
-        "HOW TO DRAW."
-    }
+        icon_polygon,
+        "Click and drag to add a new segment to the polygon. Hold shift to snap to angles."
+    },
+    { 
+        TOOL_SELECT_POLYGON,
+        OPTION_SELECT_MODE,
+        "Select polygon",
+        icon_polygon_select2,
+        "Click and drag to add segments to the selection polygon. The selection can be moved with click and drag."
+    },
 };
 
 const int g_tools_count = sizeof(g_tools) / sizeof(ToolInfo);

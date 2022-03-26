@@ -319,7 +319,6 @@ void cc_bitmap_draw_square(CcBitmap* b, int cx, int cy, int d, uint32_t color)
         }
     }
 }
-
    
 void cc_bitmap_interp_square(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
 {
@@ -330,7 +329,6 @@ void cc_bitmap_interp_circle(CcBitmap* b, int x1, int y1, int x2, int y2, int ra
 {
     BITMAP_DRAW_LINE(cc_bitmap_draw_circle(b, x, y, radius, color));
 }
-
 
 void cc_bitmap_interp_dotted(CcBitmap* b, int x1, int y1, int x2, int y2, uint32_t color)
 {
@@ -473,8 +471,6 @@ void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uin
 }
 */
 
-
-
 static
 void cc_fill_even_odd_(CcBitmap* dst, CcRect rect, uint32_t color, uint32_t sentinel)
 {
@@ -550,204 +546,6 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
         color,
         special_marker
         );
-}
-
-void cc_bitmap_stroke_polygon(
-        CcBitmap* dst,
-        const CcCoord* points,
-        int n,
-        int closed,
-        int width,
-        uint32_t color
-        )
-{
-    for (int i = 0; i < n - 1; ++i)
-    {
-        cc_bitmap_interp_square(
-                dst,
-                points[i].x,
-                points[i].y,
-                points[i + 1].x,
-                points[i + 1].y,
-                width,
-                color
-        );
-    }
-
-    if (closed && n > 2)
-    {
-        cc_bitmap_interp_square(
-                dst,
-                points[n - 1].x,
-                points[n - 1].y,
-                points[0].x,
-                points[0].y,
-                width,
-                color
-        );
-    }
-}
-
-static int polygon_point_classify_extrema_(CcCoord before, CcCoord middle, CcCoord after)
-{
-    if (before.y <= middle.y && after.y <= middle.y)
-    {
-        return 1;
-    }
-    else if (before.y >= middle.y && after.y >= middle.y)
-    {
-        return -1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-static void polygon_classify_points_(const CcCoord* points, int n, int* classification)
-{
-    CcCoord before = points[n - 1];
-    CcCoord middle = points[0];
-    CcCoord after = points[1];
-    classification[0] = polygon_point_classify_extrema_(before, middle, after);
-
-    for (int i = 1; i < n; ++i)
-    {
-        before = points[i - 1];
-        middle = points[i];
-        after = points[(i + 1) % n];
-        classification[i] = polygon_point_classify_extrema_(before, middle, after);
-        printf("%d\n", classification[i]);
-    }
-}
-
-static int intersect_scanline_line_(CcCoord a, CcCoord b, int y, int *out_x)
-{
-    if ( (y < a.y && y < b.y) ||
-         (y > a.y && y > b.y) ) return 0;
-
-    if (y == a.y)
-    {
-        *out_x = a.x;
-        return 1;
-    }
-    else if (y == b.y)
-    {
-        *out_x = b.x;
-        return 1;
-    }
-
-    int inv_m = (b.x - a.x) * 10000 / (b.y - a.y);
-    int fy = y - a.y;
-    int fx = (fy * inv_m) / 10000;
-
-    *out_x = a.x + fx;
-    return 1;
-}
-
-typedef struct
-{
-    int x;
-    int duplicate;
-} ScanLineHit;
-
-static int hit_compare_(const void *ap, const void *bp)
-{
-    const ScanLineHit* a = ap;
-    const ScanLineHit* b = bp;
-    return a->x - b->x;
-}
-
-static int remove_duplicate_hits_(ScanLineHit* hits, int k)
-{
-    if (k == 5 || k == 3)
-    {
-        for (int m = 0; m < k; ++m) printf("%d %d\n", hits[m].x, hits[m].duplicate);
-    }
-
-    int i = 0;
-    int j = 0;
-
-    while (i != k)
-    {
-        hits[j] = hits[i];
-        ++j;
-
-        if (i + 1 < k && hits[i].x == hits[i + 1].x)
-        {
-            if (hits[i].duplicate)
-            {
-                hits[j] = hits[i];
-                ++j;
-            }
-            ++i;
-        }
-        ++i;
-    }
-    return j;
-}
-
-// https://web.cs.ucdavis.edu/~ma/ECS175_S00/Notes/0411_b.pdf
-void cc_bitmap_fill_polygon(
-        CcBitmap* dst,
-        const CcCoord* points,
-        int n,
-        uint32_t color
-        )
-{
-    CcRect rect = cc_rect_around_points(points, n);
-    if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
-
-    int* classification = malloc(sizeof(int) * n);
-    polygon_classify_points_(points, n, classification);
-
-    ScanLineHit* hits = malloc(sizeof(ScanLineHit) * n);
-    for (int y = rect.y; y < rect.y + rect.h; ++y)
-    {
-        int k = 0;
-        for (int i = 0; i < n; ++i)
-        {
-            CcCoord start = points[i];
-            CcCoord end = points[(i + 1) % n];
-
-            int x;
-            if (!intersect_scanline_line_(start, end, y, &x)) continue;
-
-            if (y == start.y && x == start.x)
-            {
-                hits[k].duplicate = (classification[i] == 0) ? 0 : 1;
-            }
-            else if (y == end.y && x == end.x)
-            {
-                hits[k].duplicate = (classification[(i + 1) % n] == 0) ? 0 : 1;
-            }
-            else
-            {
-                hits[k].duplicate = 1;
-            }
-
-            hits[k].x = x;
-            ++k;
-        }
-        printf("before %d\n", k);
-        qsort(hits, k, sizeof(ScanLineHit), hit_compare_);
-        k = remove_duplicate_hits_(hits, k);
-        printf("after %d\n", k);
-
-        uint32_t* data = dst->data + dst->w * y;
-
-        int i = 0;
-        while (i + 1 < k)
-        {
-            int start = interval_clamp(hits[i].x, rect.x, rect.x + rect.w);
-            int end = interval_clamp(hits[i + 1].x, rect.x, rect.x + rect.w);
-
-            for (int j = start; j <= end; ++j) data[j] = color;
-            i += 2;
-        }
-    }
-
-    free(classification);
-    free(hits);
 }
 
 void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
@@ -950,79 +748,5 @@ void cc_bitmap_zoom_power_of_2(const CcBitmap* src, CcBitmap* dst, int zoom_powe
             dst->data[x + y * dst->w] = src->data[src_x + src_y * src->w];
         }
     }
-}
-
-CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A, uint32_t bg_color)
-{
-    double epsilon = 0.0001;
-    Vec2 corners[4];
-    corners[0].x = epsilon;
-    corners[0].y = epsilon;
-
-    corners[1].x = (double)src->w - epsilon;
-    corners[1].y = epsilon;
-
-    corners[2].x = (double)src->w - epsilon;
-    corners[2].y = (double)src->h - epsilon;
-
-    corners[3].x = epsilon;
-    corners[3].y = (double)src->h - epsilon;
-
-
-    Vec2 min = cc_transform_apply(A, corners[0]);
-    Vec2 max = min; 
-
-    for (int i = 1; i < 4; ++i)
-    {
-        Vec2 out_corner = cc_transform_apply(A, corners[i]);
-
-        min.x = MIN(out_corner.x, min.x);
-        min.y = MIN(out_corner.y, min.y);
-
-        max.x = MAX(out_corner.x, max.x);
-        max.y = MAX(out_corner.y, max.y);
-    }
-
-    min.x = floor(min.x);
-    min.y = floor(min.y);
-    max.x = ceil(max.x);
-    max.y = ceil(max.y);
-
-    int w = (int)(max.x - min.x);
-    int h = (int)(max.y - min.y);
-
-    if (!dst)
-    {
-        dst = cc_bitmap_create(w, h);
-    }
-
-    // A: R^n -> R^m
-    // Iterate each pixel in the destination
-    // and find it's preimage under A to know its previous color.
-    CcTransform inverse = cc_transform_inverse(A);
-
-    // center pixels
-
-    for (int y = 0; y < h; ++y)
-    {
-        for (int x = 0; x < w; ++x)
-        {
-            Vec2 image;
-            image.x = min.x + (double)x + 0.5;
-            image.y = min.y + (double)y + 0.5;
-
-
-            // I explored adding the derivative instead of transforming each time.
-            // but, lots of small additions accumlate error and this isn't a big deal for a 2x2 matrix.
-            Vec2 pre_image = cc_transform_apply(inverse, image);
-
-            int src_x = (int)floor(pre_image.x);
-            int src_y = (int)floor(pre_image.y);
-
-            //printf("image: %f, %f pre: %f, %f\n", image.x, image.y, pre_image.x, pre_image.y);
-            dst->data[x + y * dst->w] = cc_bitmap_get(src, src_x, src_y, bg_color);
-        }
-    }
-    return dst;
 }
 

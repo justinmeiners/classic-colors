@@ -17,10 +17,12 @@
 #ifndef CC_LAYER_H
 #define CC_LAYER_H
 
+#include <wctype.h>
 #include "bitmap.h"
+#include "transform.h"
+
 #include "config.h"
 #include "stb_truetype.h" 
-#include <wctype.h>
 
 typedef enum
 {

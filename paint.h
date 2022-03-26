@@ -19,9 +19,9 @@
 
 #include "layer.h"
 #include "undo_queue.h"
+#include "polygon.h"
 
 /* no Xlib allowed here */
-
 
 /*
 TODO:
@@ -98,6 +98,7 @@ typedef enum
     TOOL_ELLIPSE,
     TOOL_ERASER,
     TOOL_POLYGON,
+    TOOL_SELECT_POLYGON,
     TOOL_SELECT_RECTANGLE,
     TOOL_COUNT,
 } PaintTool;
@@ -178,10 +179,7 @@ typedef struct
     size_t paste_board_size;
     unsigned char* paste_board_data;
 
-    CcCoord* polygon_points;
-    int polygon_count;
-    int polygon_capacity;
-
+    CcPolygon polygon;
     CcUndoQueue undo;
 
     char open_file_path[OS_PATH_MAX];
