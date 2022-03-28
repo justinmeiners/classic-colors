@@ -41,9 +41,9 @@ Now install motif:
 
 	brew install openmotif libxpm
 
-**pkgsrc**
+**NetBSD (pkgsrc)**
 
-	sudo pkgin install motif
+	pkgin install motif gmake
 
 **OpenBSD**
 
