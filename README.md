@@ -22,6 +22,7 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 - Xt
 - Xpm
 - Xp (only if motif on your platform is built with print support)
+- pkg-config (usually comes with package manager)
 
 **Debian/Ubuntu**:
 
@@ -41,9 +42,9 @@ Now install motif:
 
 	brew install openmotif libxpm
 
-**pkgsrc**
+**NetBSD (pkgsrc)**
 
-	sudo pkgin install motif
+	pkgin install motif gmake pkg-config
 
 **OpenBSD**
 
@@ -101,7 +102,10 @@ Here the development dependencies on Debian:
 
 ## Screenshots
 
-![classic colors openbsd screenshot](screenshots/2.png)
+![classic colors openbsd screenshot](screenshots/openbsd.png)
 
-![classic colors Mac OS screenshot](screenshots/3.png)
+![classic colors Mac OS screenshot](screenshots/macos.png)
+
+![classic colors NetBSD screenshot](screenshots/netbsd.png)
+
 
