@@ -25,6 +25,7 @@ case "$(uname -s)" in
     Darwin)
     if command -v brew > /dev/null
     then
+        echo "using homebrew"
         cat >> config.mk <<-EOF
     CFLAGS += -I$(brew --prefix openmotif)/include -I/opt/X11/include
     LDFLAGS += -L$(brew --prefix openmotif)/lib
@@ -33,6 +34,7 @@ EOF
     NetBSD)
      if command -v pkgin > /dev/null
     then
+        echo "using pkgsrc"
         cat >> config.mk <<-EOF
     CFLAGS += -I/usr/pkg/include 
     LDFLAGS += -L/usr/pkg/lib
