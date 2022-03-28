@@ -101,7 +101,10 @@ Here the development dependencies on Debian:
 
 ## Screenshots
 
-![classic colors openbsd screenshot](screenshots/2.png)
+![classic colors openbsd screenshot](screenshots/openbsd.png)
 
-![classic colors Mac OS screenshot](screenshots/3.png)
+![classic colors Mac OS screenshot](screenshots/macos.png)
+
+![classic colors NetBSD screenshot](screenshots/netbsd.png)
+
 
