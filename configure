@@ -30,7 +30,14 @@ case "$(uname -s)" in
     LDFLAGS += -L$(brew --prefix openmotif)/lib
 EOF
     fi ;;
-    NetBSD) ;;
+    NetBSD)
+     if command -v pkgin > /dev/null
+    then
+        cat >> config.mk <<-EOF
+    CFLAGS += -I/usr/pkg/include 
+    LDFLAGS += -L/usr/pkg/lib
+EOF
+    fi ;;
     Linux) ;;
 esac
 
