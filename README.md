@@ -22,6 +22,7 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 - Xt
 - Xpm
 - Xp (only if motif on your platform is built with print support)
+- pkg-config (usually comes with package manager)
 
 **Debian/Ubuntu**:
 
@@ -43,7 +44,7 @@ Now install motif:
 
 **NetBSD (pkgsrc)**
 
-	pkgin install motif gmake
+	pkgin install motif gmake pkg-config
 
 **OpenBSD**
 
