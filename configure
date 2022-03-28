@@ -37,7 +37,7 @@ EOF
         echo "using pkgsrc"
         cat >> config.mk <<-EOF
     CFLAGS += -I/usr/pkg/include 
-    LDFLAGS += -L/usr/pkg/lib
+    LDFLAGS += -L/usr/pkg/lib -Wl,-rpath,/usr/pkg/lib
 EOF
     fi ;;
     Linux) ;;
