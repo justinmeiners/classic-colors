@@ -35,12 +35,11 @@ void cc_bitmap_stroke_polygon(
         );
 
 
-// requires:
-//      polygon does not contain trivially duplicate points
-//      (recommend calling cc_polygon_cleanup).
-void cc_bitmap_fill_polygon(
+// - points will be modified.
+// - recommend calling cc_polygon_cleanup first
+void cc_bitmap_fill_polygon_inplace(
         CcBitmap* dst,
-        const CcCoord* points,
+        CcCoord* points,
         int n,
         uint32_t color
         );

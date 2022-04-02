@@ -73,6 +73,85 @@ void cc_polygon_shift(CcPolygon* p, CcCoord shift)
     }
 }
 
+void cc_polygon_remove_duplicates_open(CcPolygon* p)
+{
+    if (p->count <= 0) return;
+
+    int count = 1;
+    for (int i = 1; i < p->count; ++i)
+    {
+        if (p->points[i - 1].x == p->points[i].x &&
+            p->points[i - 1].y == p->points[i].y) {
+            // skip over
+        } else {
+            p->points[count] = p->points[i];
+            ++count;
+        }
+    }
+    p->count = count;
+}
+
+void cc_polygon_remove_duplicates_closed(CcPolygon* p)
+{
+    if (p->count <= 0) return;
+    cc_polygon_remove_duplicates_open(p);
+
+    if (p->count > 1)
+    {
+        int n = p->count;
+        if (p->points[n - 1].x == p->points[0].x && p->points[n - 1].y == p->points[0].y) --n;
+        p->count = n;
+    }
+}
+
+void cc_polygon_cleanup(CcPolygon* p, int closed)
+{
+    if (closed)
+    {
+        cc_polygon_remove_duplicates_closed(p);
+    }
+    else
+    {
+        cc_polygon_remove_duplicates_open(p);
+    }
+}
+
+void cc_bitmap_stroke_polygon(
+        CcBitmap* dst,
+        const CcCoord* points,
+        int n,
+        int closed,
+        int width,
+        uint32_t color
+        )
+{
+    for (int i = 0; i < n - 1; ++i)
+    {
+        cc_bitmap_interp_square(
+                dst,
+                points[i].x,
+                points[i].y,
+                points[i + 1].x,
+                points[i + 1].y,
+                width,
+                color
+        );
+    }
+
+    if (closed && n > 2)
+    {
+        cc_bitmap_interp_square(
+                dst,
+                points[n - 1].x,
+                points[n - 1].y,
+                points[0].x,
+                points[0].y,
+                width,
+                color
+        );
+    }
+}
+
 static
 void polygon_critical_values_x_(const CcCoord* points, int n, CriticalValue* out)
 {
@@ -131,95 +210,6 @@ int remove_axis_colinear_points_(CcCoord* points, CriticalValue* dirs, int n)
     }
     return count;
 }
-
-void cc_polygon_remove_duplicates_open(CcPolygon* p)
-{
-    // TODO:
-    assert(0);
-    int n = p->count;
-    if (n < 3) return;
-
-    CriticalValue* dirs = malloc(sizeof(CriticalValue) * n);
-    --n;
-    polygon_critical_values_x_(p->points + 1, n, dirs);
-    n = remove_axis_colinear_points_(p->points + 1, dirs, n);
-
-    polygon_critical_values_y_(p->points + 1, n, dirs);
-    n = remove_axis_colinear_points_(p->points, dirs, n);
-
-    // copy last
-    p->points[n] = p->points[p->count -= 1];
-    ++n;
-    p->count = n;
-
-    free(dirs);
-}
-
-void cc_polygon_remove_duplicates_closed(CcPolygon* p)
-{
-    int n = p->count;
-    if (n < 3) return;
-
-    CriticalValue* dirs = malloc(sizeof(CriticalValue) * n);
-
-    polygon_critical_values_x_(p->points, n, dirs);
-    n = remove_axis_colinear_points_(p->points, dirs, n);
-
-    polygon_critical_values_y_(p->points, n, dirs);
-    n = remove_axis_colinear_points_(p->points, dirs, n);
-    p->count = n;
-
-    free(dirs);
-}
-
-void cc_polygon_cleanup(CcPolygon* p, int closed)
-{
-    if (closed)
-    {
-        cc_polygon_remove_duplicates_closed(p);
-    }
-    else
-    {
-        cc_polygon_remove_duplicates_open(p);
-    }
-}
-
-void cc_bitmap_stroke_polygon(
-        CcBitmap* dst,
-        const CcCoord* points,
-        int n,
-        int closed,
-        int width,
-        uint32_t color
-        )
-{
-    for (int i = 0; i < n - 1; ++i)
-    {
-        cc_bitmap_interp_square(
-                dst,
-                points[i].x,
-                points[i].y,
-                points[i + 1].x,
-                points[i + 1].y,
-                width,
-                color
-        );
-    }
-
-    if (closed && n > 2)
-    {
-        cc_bitmap_interp_square(
-                dst,
-                points[n - 1].x,
-                points[n - 1].y,
-                points[0].x,
-                points[0].y,
-                width,
-                color
-        );
-    }
-}
-
 
 // requires: polygon is closed
 //           n >= 3
@@ -294,20 +284,19 @@ int crossing_compare_(const void *a, const void *b)
     return *((int*)a) - *((int*)b);
 }
 
-void cc_bitmap_fill_polygon(
+// requires:
+//      polygon does not contain trivially duplicate points
+static
+void fill_polygon_(
         CcBitmap* dst,
         const CcCoord* points,
+        const CriticalValue* y_dirs,
         int n,
         uint32_t color
         )
 {
     // Scan line algorithm for arbitrary polygons
     // Overview: https://web.cs.ucdavis.edu/~ma/ECS175_S00/Notes/0411_b.pdf
-
-    if (n < 3) return;
-
-    CriticalValue* y_dirs = malloc(sizeof(CriticalValue) * n);
-    polygon_critical_values_y_(points, n, y_dirs);
 
     CcRect rect = cc_rect_around_points(points, n);
     if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
@@ -340,7 +329,42 @@ void cc_bitmap_fill_polygon(
     }
 
     free(crossings);
-    free(y_dirs);
+}
+
+void cc_bitmap_fill_polygon_inplace(
+        CcBitmap* dst,
+        CcCoord* points,
+        int n,
+        uint32_t color
+        )
+{
+
+    if (n < 3) return;
+
+    CriticalValue* dirs = malloc(sizeof(CriticalValue) * n);
+    polygon_critical_values_x_(points, n, dirs);
+    n = remove_axis_colinear_points_(points, dirs, n);
+
+    // must do y after x in order to reuse it.
+    polygon_critical_values_y_(points, n, dirs);
+    n = remove_axis_colinear_points_(points, dirs, n);
+
+    fill_polygon_(dst, points, dirs, n, color);
+
+    free(dirs);
+}
+
+void cc_bitmap_fill_polygon(
+        CcBitmap* dst,
+        const CcCoord* points,
+        int n,
+        uint32_t color
+        )
+{
+    CcCoord* copy = malloc(sizeof(CcCoord) * n);
+    memcpy(copy, points, sizeof(CcCoord) * n);
+    cc_bitmap_fill_polygon_inplace(dst, copy, n, color);
+    free(copy);
 }
 
 
