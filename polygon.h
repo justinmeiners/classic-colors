@@ -44,5 +44,11 @@ void cc_bitmap_fill_polygon_inplace(
         uint32_t color
         );
 
+void cc_bitmap_fill_polygon(
+        CcBitmap* dst,
+        const CcCoord* points,
+        int n,
+        uint32_t color
+        );
 
 #endif

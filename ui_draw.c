@@ -40,6 +40,8 @@ typedef struct
     Visual* x_visual;
     GC x_gc;
     XVisualInfo x_visual_info;
+    XColor select_bright;
+    XColor select_dark;
 
 #ifdef FEATURE_SHM
     // "it will have a lifetime at least as long as that of the ... XImage"
@@ -364,6 +366,13 @@ Widget ui_setup_draw_area(Widget parent)
         printf("X11 color mask. red: %08lx. green: %08lx. blue: %08lx\n", g_buffer.x_visual_info.red_mask, g_buffer.x_visual_info.green_mask, g_buffer.x_visual_info.blue_mask);
     }
 
+    Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
+
+    XParseColor(display, screen_colormap, "#000000", &buffer->select_dark);
+    XAllocColor(display, screen_colormap, &buffer->select_dark);
+    XParseColor(display, screen_colormap, "#FFFFFF", &buffer->select_bright);
+    XAllocColor(display, screen_colormap, &buffer->select_bright);
+
     XtManageChild(draw_area);
 
     return draw_area;
@@ -560,26 +569,27 @@ void ui_refresh_drawing(int clear)
         const CcLayer* l = ctx->layers + ctx->active_layer;
         if (l->bitmaps != NULL)
         {
-            char dash_pattern[] = { 4, 2 };
-            XSetDashes(dpy, buffer->x_gc, 0, dash_pattern, 2);
+            int x = (l->x - ctx->viewport.paint_x) * ctx->viewport.zoom;
+            int y = (l->y - ctx->viewport.paint_y) * ctx->viewport.zoom;
+            int w = (l->bitmaps->w) * ctx->viewport.zoom - 1;
+            int h = (l->bitmaps->h) * ctx->viewport.zoom - 1;
+
+
             XSetLineAttributes(dpy, buffer->x_gc, 1, LineOnOffDash, CapButt, JoinMiter);
 
-            XDrawRectangle(
-                    dpy,
-                    window,
-                    buffer->x_gc,
-                    (l->x - ctx->viewport.paint_x) * ctx->viewport.zoom,
-                    (l->y - ctx->viewport.paint_y) * ctx->viewport.zoom,
-                    (l->bitmaps->w) * ctx->viewport.zoom - 1,
-                    (l->bitmaps->h) * ctx->viewport.zoom - 1
-           );
+            char dash_pattern[] = { 4, 4 };
+            XSetDashes(dpy, buffer->x_gc, 0, dash_pattern, 2);
+            XSetForeground(dpy, buffer->x_gc, buffer->select_bright.pixel);
+            XDrawRectangle(dpy, window, buffer->x_gc, x, y, w, h);
+
+            XSetDashes(dpy, buffer->x_gc, 4, dash_pattern, 2);
+            XSetForeground(dpy, buffer->x_gc, buffer->select_dark.pixel);
+            XDrawRectangle(dpy, window, buffer->x_gc, x, y, w, h);
         }
     }
 
     XFlush(dpy);
 }
-
-
 
 Widget ui_setup_scroll_area(Widget parent)
 {
