@@ -15,20 +15,39 @@ pkg-config --exists --print-errors x11 xext xt xpm
 #  Major opcode of failed request:  19 (X_DeleteProperty)"
 cat >> config.mk <<-EOF
 	CFLAGS += -std=c99 $(pkg-config --cflags x11 xext xt xpm) $(pkg-config --silence-errors --cflags xp)
-	LDFLAGS += $(pkg-config --libs-only-L x11 xext xt xpm) $(pkg-config --silence-errors --libs-only-L xp)
+	LDFLAGS += $(pkg-config --libs-only-other --libs-only-L x11 xext xt xpm) $(pkg-config --silence-errors --libs-only-other --libs-only-L xp)
 	LDLIBS += -lm $(pkg-config --libs-only-l x11 xext) -lXm $(pkg-config --libs-only-l xt xpm) $(pkg-config --silence-errors --libs-only-L xp)
-	CFLAGS += -I/opt/X11/include 
 EOF
 
 # Unfortuantly motif (xm) does not have a .pc file.
 # so we have to find it.
-if command -v brew > /dev/null
-then
-	cat >> config.mk <<-EOF
-		CFLAGS += -I$(brew --prefix openmotif)/include
-		LDFLAGS += -L$(brew --prefix openmotif)/lib
-	EOF
-fi
+case "$(uname -s)" in
+    Darwin)
+    if command -v brew > /dev/null
+    then
+        echo "using homebrew"
+        cat >> config.mk <<-EOF
+    CFLAGS += -I$(brew --prefix openmotif)/include -I/opt/X11/include
+    LDFLAGS += -L$(brew --prefix openmotif)/lib
+EOF
+    fi ;;
+    NetBSD)
+     if command -v pkgin > /dev/null
+    then
+        echo "using pkgsrc"
+        cat >> config.mk <<-EOF
+    CFLAGS += -I/usr/pkg/include 
+    LDFLAGS += -L/usr/pkg/lib -Wl,-rpath,/usr/pkg/lib
+EOF
+    fi ;;
+    OpenBSD)
+        cat >> config.mk <<-EOF
+    CFLAGS += -I/usr/local/include
+    LDFLAGS += -L/usr/local/lib
+EOF
+    ;;
+    Linux) ;;
+esac
 
 X11_PATH_PREFIX=$(pkg-config --variable prefix x11)
 echo "CFLAGS += -D_POSIX_C_SOURCE=200809L -D X11_PATH_PREFIX=\\\"${X11_PATH_PREFIX}\\\"" >> config.mk
