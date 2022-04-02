@@ -394,11 +394,12 @@ void settle_selection_layer_(PaintContext* ctx)
 static
 void settle_polygon_(PaintContext* ctx)
 {
+    cc_polygon_cleanup(&ctx->polygon, 1);
     if (ctx->polygon.count > 0)
     {
         CcBitmap* b = ctx->layers[LAYER_MAIN].bitmaps;
 
-       if (ctx->shape_flags & SHAPE_FILL)
+        if (ctx->shape_flags & SHAPE_FILL)
         {
             printf("FILLING\n");
             cc_bitmap_fill_polygon(
@@ -1076,7 +1077,7 @@ void paint_select(PaintContext* ctx, int x, int y, int w, int h)
 
 void paint_select_polygon(PaintContext* ctx)
 {
-    printf("MOVING\n");
+    cc_polygon_cleanup(&ctx->polygon, 1);
     if (ctx->polygon.count < 3) return;
 
     CcLayer* l = ctx->layers + LAYER_MAIN;

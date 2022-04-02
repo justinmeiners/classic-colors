@@ -73,60 +73,44 @@ void cc_polygon_shift(CcPolygon* p, CcCoord shift)
     }
 }
 
-void cc_polygon_remove_duplicates_open(CcPolygon* p)
+static
+void polygon_critical_values_x_(const CcCoord* points, int n, CriticalValue* out)
 {
-    int count = 0;
+    assert(n >= 3);
+    int i = 0;
+    out[i].before = points[n - 1].x - points[i].x;
+    out[i].after = points[i + 1].x - points[i].x;
+    ++i;
 
-    int n = p->count;
-    if (n == 0) return count;
-    ++count;
-
-    for (int i = 1; i < n - 1; ++i)
+    while (i < (n - 1))
     {
-        int x = p->points[i].x;
-        int y = p->points[i].y;
-
-        if ( (p->points[i - 1].x == x && p->points[i + 1].x == x)
-            || (p->points[i - 1].y == y && p->points[i + 1].y == y) )
-        {
-            // ignore point
-        }
-        else
-        {
-            p->points[count] = p->points[i];
-            ++count;
-        }
+        out[i].before = points[i - 1].x - points[i].x;
+        out[i].after = points[i + 1].x - points[i].x;
+        ++i;
     }
-    p->count = count;
+    out[i].before = points[i - 1].x - points[i].x;
+    out[i].after = points[0].x - points[i].x;
+    ++i;
 }
 
-void cc_polygon_remove_duplicates_closed(CcPolygon* p)
+static
+void polygon_critical_values_y_(const CcCoord* points, int n, CriticalValue* out)
 {
-    if (p->count < 2) return;
+    assert(n >= 3);
+    int i = 0;
+    out[i].before = points[n - 1].y - points[i].y;
+    out[i].after = points[i + 1].y - points[i].y;
+    ++i;
 
-    int x = p->points[0].x;
-    int y = p->points[0].y;
-
-    if ( (p->points[n - 1].x == x && p->points[1].x == x) ||
-         (p->points[n - 1].y == y && p->points[1].y == y) )
+    while (i < (n - 1))
     {
-        for (int i = 0; i < p->count; ++i)
-            p->points[i] = p->points[i + 1];
-
-        --p->count;
+        out[i].before = points[i - 1].y - points[i].y;
+        out[i].after = points[i + 1].y - points[i].y;
+        ++i;
     }
- 
-    cc_polygon_remove_duplicates_open(p);
-
-    if (p->count < 2) return;
-    x = p->points[n - 1].x;
-    y = p->points[n - 1].y;
-
-    if ( (p->points[n - 2].x == x && p->points[0].x == x) ||
-            (p->points[n - 2].y == y && p->points[0].y == y) )
-    {
-        --p->count;
-    }
+    out[i].before = points[i - 1].y - points[i].y;
+    out[i].after = points[0].y - points[i].y;
+    ++i;
 }
 
 int remove_axis_colinear_points_(CcCoord* points, CriticalValue* dirs, int n)
@@ -148,22 +132,56 @@ int remove_axis_colinear_points_(CcCoord* points, CriticalValue* dirs, int n)
     return count;
 }
 
-void cc_polygon_remove_duplicates(CcPolygon* p)
+void cc_polygon_remove_duplicates_open(CcPolygon* p)
 {
-    CriticalValue* values = malloc(sizeof(CriticalValue) * n);
-
+    // TODO:
+    assert(0);
     int n = p->count;
+    if (n < 3) return;
+
+    CriticalValue* dirs = malloc(sizeof(CriticalValue) * n);
+    --n;
+    polygon_critical_values_x_(p->points + 1, n, dirs);
+    n = remove_axis_colinear_points_(p->points + 1, dirs, n);
+
+    polygon_critical_values_y_(p->points + 1, n, dirs);
+    n = remove_axis_colinear_points_(p->points, dirs, n);
+
+    // copy last
+    p->points[n] = p->points[p->count -= 1];
+    ++n;
+    p->count = n;
+
+    free(dirs);
+}
+
+void cc_polygon_remove_duplicates_closed(CcPolygon* p)
+{
+    int n = p->count;
+    if (n < 3) return;
+
+    CriticalValue* dirs = malloc(sizeof(CriticalValue) * n);
+
     polygon_critical_values_x_(p->points, n, dirs);
     n = remove_axis_colinear_points_(p->points, dirs, n);
 
     polygon_critical_values_y_(p->points, n, dirs);
     n = remove_axis_colinear_points_(p->points, dirs, n);
     p->count = n;
+
+    free(dirs);
 }
 
-void cc_polygon_cleanup(CcPolygon* p)
+void cc_polygon_cleanup(CcPolygon* p, int closed)
 {
-    cc_polygon_remove_duplicates(p);
+    if (closed)
+    {
+        cc_polygon_remove_duplicates_closed(p);
+    }
+    else
+    {
+        cc_polygon_remove_duplicates_open(p);
+    }
 }
 
 void cc_bitmap_stroke_polygon(
@@ -200,26 +218,6 @@ void cc_bitmap_stroke_polygon(
                 color
         );
     }
-}
-
-static
-void polygon_critical_values_y_(const CcCoord* points, int n, CriticalValue* out)
-{
-    assert(n >= 3);
-    int i = 0;
-    out[i].before = points[n - 1].y - points[i].y;
-    out[i].after = points[i + 1].y - points[i].y;
-    ++i;
-
-    while (i < (n - 1))
-    {
-        out[i].before = points[i - 1].y - points[i].y;
-        out[i].after = points[i + 1].y - points[i].y;
-        ++i;
-    }
-    out[i].before = points[i - 1].y - points[i].y;
-    out[i].after = points[0].y - points[i].y;
-    ++i;
 }
 
 
