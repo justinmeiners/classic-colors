@@ -70,7 +70,6 @@ void cc_bitmap_copy_mask(CcBitmap* b, const unsigned char* mask_buffer, uint32_t
 
 void cc_bitmap_replace(CcBitmap* b, uint32_t old_color, uint32_t new_color);
 
-// src_rect must be in bounds
 void cc_bitmap_blit(
         const CcBitmap* src,
         CcBitmap* dst,
@@ -83,6 +82,7 @@ void cc_bitmap_blit(
         CcColorBlend blend
         );
 
+// requires: src rect is in bounds
 void cc_bitmap_blit_unsafe(
         const CcBitmap* src,
         CcBitmap* dst,

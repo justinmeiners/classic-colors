@@ -19,6 +19,10 @@ void cc_polygon_clear(CcPolygon* p);
 void cc_polygon_update_last(CcPolygon* p, CcCoord x, int align);
 
 CcRect cc_polygon_rect(const CcPolygon* p);
+void cc_polygon_shift(CcPolygon* p, CcCoord shift);
+
+void cc_polygon_remove_duplicates(CcPolygon* p);
+void cc_polygon_cleanup(CcPolygon* p);
 
 void cc_bitmap_stroke_polygon(
         CcBitmap* dst,
@@ -29,6 +33,10 @@ void cc_bitmap_stroke_polygon(
         uint32_t color
         );
 
+
+// requires:
+//      polygon does not contain trivially duplicate points
+//      (recommend calling cc_polygon_cleanup).
 void cc_bitmap_fill_polygon(
         CcBitmap* dst,
         const CcCoord* points,
@@ -36,6 +44,5 @@ void cc_bitmap_fill_polygon(
         uint32_t color
         );
 
-void cc_polygon_shift(CcPolygon* p, CcCoord shift);
 
 #endif

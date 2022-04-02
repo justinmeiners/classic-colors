@@ -2,6 +2,12 @@
 #include <assert.h>
 #include "polygon.h"
 
+typedef struct
+{
+    int before;
+    int after;
+} CriticalValue; 
+
 void cc_polygon_init(CcPolygon* p)
 {
     p->count = 0;
@@ -58,6 +64,108 @@ CcRect cc_polygon_rect(const CcPolygon* p)
     return cc_rect_around_points(p->points, p->count);
 }
 
+void cc_polygon_shift(CcPolygon* p, CcCoord shift)
+{
+    for (int i = 0; i < p->count; ++i)
+    {
+        p->points[i].x += shift.x;
+        p->points[i].y += shift.y;
+    }
+}
+
+void cc_polygon_remove_duplicates_open(CcPolygon* p)
+{
+    int count = 0;
+
+    int n = p->count;
+    if (n == 0) return count;
+    ++count;
+
+    for (int i = 1; i < n - 1; ++i)
+    {
+        int x = p->points[i].x;
+        int y = p->points[i].y;
+
+        if ( (p->points[i - 1].x == x && p->points[i + 1].x == x)
+            || (p->points[i - 1].y == y && p->points[i + 1].y == y) )
+        {
+            // ignore point
+        }
+        else
+        {
+            p->points[count] = p->points[i];
+            ++count;
+        }
+    }
+    p->count = count;
+}
+
+void cc_polygon_remove_duplicates_closed(CcPolygon* p)
+{
+    if (p->count < 2) return;
+
+    int x = p->points[0].x;
+    int y = p->points[0].y;
+
+    if ( (p->points[n - 1].x == x && p->points[1].x == x) ||
+         (p->points[n - 1].y == y && p->points[1].y == y) )
+    {
+        for (int i = 0; i < p->count; ++i)
+            p->points[i] = p->points[i + 1];
+
+        --p->count;
+    }
+ 
+    cc_polygon_remove_duplicates_open(p);
+
+    if (p->count < 2) return;
+    x = p->points[n - 1].x;
+    y = p->points[n - 1].y;
+
+    if ( (p->points[n - 2].x == x && p->points[0].x == x) ||
+            (p->points[n - 2].y == y && p->points[0].y == y) )
+    {
+        --p->count;
+    }
+}
+
+int remove_axis_colinear_points_(CcCoord* points, CriticalValue* dirs, int n)
+{
+    int count = 0;
+    for (int i = 0; i < n; ++i)
+    {
+        if (dirs[i].before == 0 && dirs[i].after == 0)
+        {
+            // ignore point
+        }
+        else
+        {
+            points[count] = points[i];
+            dirs[count] = dirs[i];
+            ++count;
+        }
+    }
+    return count;
+}
+
+void cc_polygon_remove_duplicates(CcPolygon* p)
+{
+    CriticalValue* values = malloc(sizeof(CriticalValue) * n);
+
+    int n = p->count;
+    polygon_critical_values_x_(p->points, n, dirs);
+    n = remove_axis_colinear_points_(p->points, dirs, n);
+
+    polygon_critical_values_y_(p->points, n, dirs);
+    n = remove_axis_colinear_points_(p->points, dirs, n);
+    p->count = n;
+}
+
+void cc_polygon_cleanup(CcPolygon* p)
+{
+    cc_polygon_remove_duplicates(p);
+}
+
 void cc_bitmap_stroke_polygon(
         CcBitmap* dst,
         const CcCoord* points,
@@ -94,104 +202,100 @@ void cc_bitmap_stroke_polygon(
     }
 }
 
-static int polygon_point_classify_extrema_(CcCoord before, CcCoord middle, CcCoord after)
+static
+void polygon_critical_values_y_(const CcCoord* points, int n, CriticalValue* out)
 {
-    if (before.y <= middle.y && after.y <= middle.y)
-    {
-        return 1;
-    }
-    else if (before.y >= middle.y && after.y >= middle.y)
-    {
-        return -1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-static void polygon_classify_points_(const CcCoord* points, int n, int* classification)
-{
-    CcCoord before = points[n - 1];
-    CcCoord middle = points[0];
-    CcCoord after = points[1];
-    classification[0] = polygon_point_classify_extrema_(before, middle, after);
-
-    for (int i = 1; i < n; ++i)
-    {
-        before = points[i - 1];
-        middle = points[i];
-        after = points[(i + 1) % n];
-        classification[i] = polygon_point_classify_extrema_(before, middle, after);
-    }
-}
-
-static int intersect_scanline_line_(CcCoord a, CcCoord b, int y, int *out_x)
-{
-    if ( (y < a.y && y < b.y) ||
-         (y > a.y && y > b.y) ) return 0;
-
-    if (y == a.y)
-    {
-        *out_x = a.x;
-        return 1;
-    }
-    else if (y == b.y)
-    {
-        *out_x = b.x;
-        return 1;
-    }
-
-    int inv_m = (b.x - a.x) * 10000 / (b.y - a.y);
-    int fy = y - a.y;
-    int fx = (fy * inv_m) / 10000;
-
-    *out_x = a.x + fx;
-    return 1;
-}
-
-typedef struct
-{
-    int x;
-    int duplicate;
-} ScanLineHit;
-
-static int hit_compare_(const void *ap, const void *bp)
-{
-    const ScanLineHit* a = ap;
-    const ScanLineHit* b = bp;
-    return a->x - b->x;
-}
-
-static int remove_duplicate_hits_(ScanLineHit* hits, int k)
-{
-    if (k == 5 || k == 3)
-    {
-        for (int m = 0; m < k; ++m) printf("%d %d\n", hits[m].x, hits[m].duplicate);
-    }
-
+    assert(n >= 3);
     int i = 0;
-    int j = 0;
+    out[i].before = points[n - 1].y - points[i].y;
+    out[i].after = points[i + 1].y - points[i].y;
+    ++i;
 
-    while (i != k)
+    while (i < (n - 1))
     {
-        hits[j] = hits[i];
-        ++j;
-
-        if (i + 1 < k && hits[i].x == hits[i + 1].x)
-        {
-            if (hits[i].duplicate)
-            {
-                hits[j] = hits[i];
-                ++j;
-            }
-            ++i;
-        }
+        out[i].before = points[i - 1].y - points[i].y;
+        out[i].after = points[i + 1].y - points[i].y;
         ++i;
     }
-    return j;
+    out[i].before = points[i - 1].y - points[i].y;
+    out[i].after = points[0].y - points[i].y;
+    ++i;
 }
 
-// https://web.cs.ucdavis.edu/~ma/ECS175_S00/Notes/0411_b.pdf
+
+// requires: polygon is closed
+//           n >= 3
+//           polygon is not colinear
+//           no duplicate polygon points 
+static
+int scanline_crossings_(const CcCoord* points, const CriticalValue* y_dirs, int n, int scan_y, int* out_x)
+{
+    // The key insight is to look at the perspective of the entire polygon.
+    // What are all the places this polygon passes the given scan line?
+    // https://stackoverflow.com/a/35551300/425756
+    assert(n >= 3);
+    int crossings = 0;
+
+    for (int i = 0; i < n; ++i)
+    {
+        CcCoord start = points[i];
+        if (start.y == scan_y)
+        {
+            CriticalValue dir = y_dirs[i];
+            // special case: vertex on scanline.
+
+            if (dir.before == 0)
+            {
+                // end of a horizontal scan line
+                // ignore.
+                // it will be handled when we get around the loop.
+            }
+            else if (dir.after == 0)
+            {
+                // start of a horizontal line
+                CriticalValue next_dir = y_dirs[(i + 1) % n];
+                assert(next_dir.after != 0);
+
+                if (next_dir.after * dir.before < 0)
+                {
+                    out_x[crossings] = start.x;
+                    ++crossings;
+                }
+            }
+            else if (dir.before * dir.after < 0)
+            {
+                // signs of y differ. This is a crossing at a vertex.
+                out_x[crossings] = start.x;
+                ++crossings;
+            }
+            // signs of y same. This is an extrema, not a crossing.
+        }
+        else
+        {
+            // normal case: find the intersection with the line.
+            CcCoord end = points[(i + 1) % n];
+            if ((start.y < scan_y && scan_y < end.y) 
+               || (end.y < scan_y && scan_y < start.y))
+            {
+                assert(end.y != start.y);
+                int inv_m = (end.x - start.x) * 10000 / (end.y - start.y);
+                int fy = scan_y - start.y;
+                int fx = (fy * inv_m) / 10000;
+
+                out_x[crossings] = start.x + fx;
+                ++crossings;
+            }
+        }
+    }
+    return crossings;
+}
+
+static
+int crossing_compare_(const void *a, const void *b)
+{
+    return *((int*)a) - *((int*)b);
+}
+
 void cc_bitmap_fill_polygon(
         CcBitmap* dst,
         const CcCoord* points,
@@ -199,67 +303,46 @@ void cc_bitmap_fill_polygon(
         uint32_t color
         )
 {
+    // Scan line algorithm for arbitrary polygons
+    // Overview: https://web.cs.ucdavis.edu/~ma/ECS175_S00/Notes/0411_b.pdf
+
+    if (n < 3) return;
+
+    CriticalValue* y_dirs = malloc(sizeof(CriticalValue) * n);
+    polygon_critical_values_y_(points, n, y_dirs);
+
     CcRect rect = cc_rect_around_points(points, n);
     if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
 
-    int* classification = malloc(sizeof(int) * n);
-    polygon_classify_points_(points, n, classification);
-
-    ScanLineHit* hits = malloc(sizeof(ScanLineHit) * n);
+    int* crossings = malloc(sizeof(int) * n);
     for (int y = rect.y; y < rect.y + rect.h; ++y)
     {
-        int k = 0;
-        for (int i = 0; i < n; ++i)
+        int crossing_count = scanline_crossings_(points, y_dirs, n, y, crossings);
+        qsort(crossings, crossing_count, sizeof(int), crossing_compare_);
+
+        /* DEBUG
+        for (int i = 0; i < crossing_count; ++i)
         {
-            CcCoord start = points[i];
-            CcCoord end = points[(i + 1) % n];
-
-            int x;
-            if (!intersect_scanline_line_(start, end, y, &x)) continue;
-
-            if (y == start.y && x == start.x)
-            {
-                hits[k].duplicate = (classification[i] == 0) ? 0 : 1;
-            }
-            else if (y == end.y && x == end.x)
-            {
-                hits[k].duplicate = (classification[(i + 1) % n] == 0) ? 0 : 1;
-            }
-            else
-            {
-                hits[k].duplicate = 1;
-            }
-
-            hits[k].x = x;
-            ++k;
+            printf("%d ", crossings[i]);
         }
-        printf("before %d\n", k);
-        qsort(hits, k, sizeof(ScanLineHit), hit_compare_);
-        k = remove_duplicate_hits_(hits, k);
-        printf("after %d\n", k);
+        printf("\n");
+        */
 
         uint32_t* data = dst->data + dst->w * y;
 
         int i = 0;
-        while (i + 1 < k)
+        while (i + 1 < crossing_count)
         {
-            int start = interval_clamp(hits[i].x, rect.x, rect.x + rect.w);
-            int end = interval_clamp(hits[i + 1].x, rect.x, rect.x + rect.w);
+            int start_x = interval_clamp(crossings[i], rect.x, rect.x + rect.w);
+            int end_x = interval_clamp(crossings[i + 1], rect.x, rect.x + rect.w);
 
-            for (int j = start; j <= end; ++j) data[j] = color;
+            for (int j = start_x; j < end_x; ++j) data[j] = color;
             i += 2;
         }
     }
 
-    free(classification);
-    free(hits);
+    free(crossings);
+    free(y_dirs);
 }
 
-void cc_polygon_shift(CcPolygon* p, CcCoord shift)
-{
-    for (int i = 0; i < p->count; ++i)
-    {
-        p->points[i].x += shift.x;
-        p->points[i].y += shift.y;
-    }
-}
+
