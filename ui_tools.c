@@ -175,7 +175,7 @@ enum {
 };
 
 ToolOptionInfo g_select_options[] = {
-    { "ignore bg", SELECT_IGNORE_BG },
+    { "no background", SELECT_IGNORE_BG },
     { "everything", SELECT_KEEP_BG }
 };
 
