@@ -1,3 +1,19 @@
+/* 
+ * Copyright (c) 2021 Justin Meiners
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 2.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <ctype.h>
 #include <assert.h>
 #include "polygon.h"
@@ -316,7 +332,7 @@ void fill_polygon_(
         printf("\n");
         */
 
-        uint32_t* data = dst->data + dst->w * y;
+        uint32_t* row_data = dst->data + dst->w * y;
 
         int i = 0;
         while (i + 1 < crossing_count)
@@ -324,7 +340,7 @@ void fill_polygon_(
             int start_x = interval_clamp(crossings[i], rect.x, rect.x + rect.w);
             int end_x = interval_clamp(crossings[i + 1], rect.x, rect.x + rect.w);
 
-            for (int j = start_x; j < end_x; ++j) data[j] = color;
+            for (int j = start_x; j < end_x; ++j) row_data[j] = color;
             i += 2;
         }
     }

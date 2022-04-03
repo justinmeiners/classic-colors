@@ -1,6 +1,27 @@
 #include <assert.h>
 #include "plane.h"
 
+// Integer square root (using binary search)
+// https://en.wikipedia.org/wiki/Integer_square_root
+unsigned int isqrt( unsigned int y )
+{
+	unsigned int L = 0;
+	unsigned int M;
+	unsigned int R = y + 1;
+
+    while( L != R - 1 )
+    {
+        M = (L + R) / 2;
+
+		if( M * M <= y )
+			L = M;
+		else
+			R = M;
+	}
+
+    return L;
+}
+
 CcRect cc_rect_around_points(const CcCoord* points, int n)
 {
     assert(n > 0);

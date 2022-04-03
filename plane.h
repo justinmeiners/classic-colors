@@ -16,6 +16,9 @@ int sign_of_int(int x) {
     return (x > 0) - (x < 0);
 }
 
+
+unsigned int isqrt( unsigned int y );
+
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
 #endif

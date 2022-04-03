@@ -14,7 +14,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <assert.h>
 #include "bitmap.h"
 
@@ -394,163 +393,86 @@ void cc_bitmap_fill_rect(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t
 
 void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x0, int y0, int x1, int y1, uint32_t color)
 {
-    // I did one.. but it sucked
+    // I tried inventing my own implementation.. but it sucked.
     // http://members.chello.at/~easyfilter/bresenham.html
+    //
     int a = abs(x1 - x0);
     int b = abs(y1 - y0);
     int b1 = b & 1;
 
-   long dx = 4 * ( 1 - a) * b * b, dy = 4*(b1 + 1) * a * a;
-   long err = dx + dy + b1 * a*a, e2; 
+    long dx = 4 * ( 1 - a) * b * b, dy = 4*(b1 + 1) * a * a;
+    long err = dx + dy + b1 * a*a, e2; 
 
-   if (x0 > x1) { x0 = x1; x1 += a; }
-   if (y0 > y1) y0 = y1; 
+    if (x0 > x1) { x0 = x1; x1 += a; }
+    if (y0 > y1) y0 = y1; 
 
-   y0 += (b+1)/2; y1 = y0-b1;
-   a *= 8*a; b1 = 8*b*b;
+    y0 += (b+1)/2; y1 = y0-b1;
+    a *= 8*a; b1 = 8*b*b;
 
 #define PUT(x_, y_) cc_bitmap_set(dst, x_, y_, color);
-   do {
-       PUT(x1, y0); 
-       PUT(x0, y0); 
-       PUT(x0, y1); 
-       PUT(x1, y1);
+    do {
+        PUT(x1, y0); 
+        PUT(x0, y0); 
+        PUT(x0, y1); 
+        PUT(x1, y1);
 
-       e2 = 2*err;
-       if (e2 <= dy) {
-           y0++; y1--;
-           err += dy += a;
-       }  
+        e2 = 2*err;
+        if (e2 <= dy) {
+            y0++; y1--;
+            err += dy += a;
+        }  
 
-       if (e2 >= dx || 2*err > dy)
-       {
-           x0++; x1--;
-           err += dx += b1;
-       } 
-   } while (x0 <= x1);
-   
-   while (y0-y1 < b) { 
-       PUT(x0-1, y0); 
-       PUT(x1+1, y0++); 
-       PUT(x0-1, y1);
-       PUT(x1+1, y1--); 
-   }
-#undef PUT
-}
-
-/*
-void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color)
-{
-    int min_x = MIN(x1, x2);
-    int min_y = MIN(y1, y2);
-
-    int w = abs(x2 - x1);
-    int h = abs(y2 - y1);
-
-    long c_x = w / 2;
-    long c_y = h / 2;
-
-    if (c_x == 0 || c_y == 0)
-    {
-        return;
-    }
-
-#define PUT(x_, y_) if ((x_) >= 0 && (x_) < dst->w && (y_) >= 0 && (y_) < dst->h) { dst->data[(x_) + (y_) * dst->w] = color; }
-
-    for (int y = 0; y < h; ++y)
-    {
-        for (int x = 0; x < w; ++x)
+        if (e2 >= dx || 2*err > dy)
         {
-            long dx = (x - c_x);
-            long dy = (y - c_y);
+            x0++; x1--;
+            err += dx += b1;
+        } 
+    } while (x0 <= x1);
 
-            long d = (dx * dx * 100) + (dy * dy) * (c_x * c_x * 100)/ (c_y * c_y);
-
-            if (d <= (c_x * c_x + c_x) * 100 && d >= (c_x * c_x - c_x) * 100)
-            {
-                PUT(x + min_x, y + min_y);
-            }
-        }
-    }
-#undef PUT
-}
-*/
-
-static
-void cc_fill_even_odd_(CcBitmap* dst, CcRect rect, uint32_t color, uint32_t sentinel)
-{
-    int from;
-    int to;
-    int dir;
-
-    if (rect.x < 0) {
-        dir = -1;
-        from = rect.x + rect.w;
-        to = rect.x;
-    } else {
-        dir = 1;
-        from = rect.x;
-        to = rect.x + rect.w;
-    }
-
-#define PUT(x_, y_) dst->data[(x_) + (y_) * dst->w] = color;
-    for (int y = rect.y; y < rect.y + rect.h; ++y)
-    { 
-        if (y < 0 || y >= dst->h) continue;
-
-        int in_boundary = 0;
-        int counter = 0;
-
-        for (int x = from; (rect.x <= x && x < rect.x + rect.w); x += dir)
-        {
-            if (x < 0 || x >= dst->w) continue;
-
-            uint32_t current = dst->data[x + y * dst->w];
-
-            if (current == sentinel)
-            {
-                PUT(x, y);
-
-                if (!in_boundary)
-                {
-                    counter += 1;
-                    in_boundary = 1;
-                }
-            }
-            else
-            {
-                in_boundary = 0;
-            }
-
-            if (counter % 2 == 1 && y != rect.y && y != rect.y + rect.h - 1)
-            {
-                PUT(x, y);
-            }
-        }
+    while (y0-y1 < b) { 
+        PUT(x0-1, y0); 
+        PUT(x1+1, y0++); 
+        PUT(x0-1, y1);
+        PUT(x1+1, y1--); 
     }
 #undef PUT
 }
 
 void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color)
 {
-    // ultimate hack
-    uint32_t special_marker = 0x12345678;
-    cc_bitmap_stroke_ellipse(dst, x1, y1, x2, y2, special_marker);
+    CcRect rect = cc_rect_around_corners(x1, y1, x2, y2);
+    if (rect.w < 2 || rect.h < 2) return;
 
-    int min_x = x1;
-    int max_x = x1;
-    extend_interval(x2, &min_x, &max_x);
+    CcRect bounds = cc_bitmap_rect(dst);
 
-    int min_y = y1;
-    int max_y = y1;
-    extend_interval(y2, &min_y, &max_y);
+    int a = rect.w / 2;
+    int b = rect.h / 2;
 
-    cc_fill_even_odd_(
-        dst,
-        cc_rect_from_extrema(min_x, min_y, max_x, max_y),
-        color,
-        special_marker
-        );
+    int cx = rect.x + a;
+    int cy = rect.y + b;
+
+    for (int row = 0; row < rect.h; ++row)
+    {
+        int ey = row - b;
+
+        long a2 = a * a;
+        long ey2 = ey * ey;
+        long b2 = b * b;
+
+        long D = a2 - (a2 * ey2) / b2;
+
+        if (D >= 0)
+        {
+            int l = (int)isqrt((unsigned int)D);
+
+            int startx = interval_clamp(cx - l, bounds.x, bounds.x + bounds.w);
+            int endx = interval_clamp(cx + l, bounds.x, bounds.x + bounds.w);
+
+            int y = cy + ey;
+            for (int x = startx; x < endx; ++x)
+                dst->data[x + y * dst->w] = color;
+        }
+    }
 }
 
 void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
