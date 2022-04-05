@@ -1093,6 +1093,7 @@ void paint_select_polygon(PaintContext* ctx)
     CcBitmap* mask = cc_bitmap_create(rect.w, rect.h);
     cc_bitmap_clear(mask, COLOR_CLEAR);
     cc_bitmap_fill_polygon(mask, ctx->polygon.points, ctx->polygon.count, COLOR_WHITE);
+    cc_bitmap_stroke_polygon(mask, ctx->polygon.points, ctx->polygon.count, 1, 1, COLOR_WHITE);
 
     /* copy selection into new bitmap */
     CcBitmap* b = cc_bitmap_create(rect.w, rect.h);
