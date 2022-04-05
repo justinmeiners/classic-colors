@@ -443,32 +443,33 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
     CcRect rect = cc_rect_around_corners(x1, y1, x2, y2);
     if (rect.w < 2 || rect.h < 2) return;
 
-    CcRect bounds = cc_bitmap_rect(dst);
+    double a = 0.5 * (double)rect.w;
+    double b = 0.5 * (double)rect.h;
 
-    int a = rect.w / 2;
-    int b = rect.h / 2;
+    double cx = (double)rect.x + a;
+    double cy = (double)rect.y + b;
 
-    int cx = rect.x + a;
-    int cy = rect.y + b;
+    if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
 
     for (int row = 0; row < rect.h; ++row)
     {
-        int ey = row - b;
+        double ey = (double)(rect.y + row) + 0.5 - cy;
 
-        long a2 = a * a;
-        long ey2 = ey * ey;
-        long b2 = b * b;
+        double a2 = a * a;
+        double ey2 = ey * ey;
+        double b2 = b * b;
 
-        long D = a2 - (a2 * ey2) / b2;
-
-        if (D >= 0)
+        double D = a2 * (1.0 - (ey2 / b2));
+        
+        if (D >= 0.0)
         {
-            int l = (int)isqrt((unsigned int)D);
+            int l = round(sqrt(D) - 0.8);
+            int l2 = round(sqrt(D) - 0.2);
 
-            int startx = interval_clamp(cx - l, bounds.x, bounds.x + bounds.w);
-            int endx = interval_clamp(cx + l, bounds.x, bounds.x + bounds.w);
+            int startx = interval_clamp(cx - l, rect.x, rect.x + rect.w);
+            int endx = interval_clamp(cx + l2, rect.x, rect.x + rect.w);
 
-            int y = cy + ey;
+            int y = row + rect.y; 
             for (int x = startx; x < endx; ++x)
                 dst->data[x + y * dst->w] = color;
         }
