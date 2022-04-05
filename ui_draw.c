@@ -71,7 +71,7 @@ void copy_bitmap_to_ximage_(XImage* dest, const CcBitmap* src, const XVisualInfo
             // Fast path
             // https://groups.google.com/g/comp.windows.x/c/c4tjX7UiuVU
             uint8_t* raw_data = (uint8_t*)src->data;
-            memcpy(dest->data, raw_data + 1, src->w * src->h * sizeof(uint32_t));
+            memcpy(dest->data, raw_data + 1, src->w * src->h * sizeof(uint32_t) - 1);
         }
         else
         {
@@ -182,14 +182,11 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
     int x, y;
     int shouldRefresh = 0;
 
-    // http://xahlee.info/linux/linux_x11_mouse_button_number.html
-    if (event->xbutton.button > 3) {
-        return;
-    }
-
     switch (event->type)
     {
         case ButtonPress:
+            // http://xahlee.info/linux/linux_x11_mouse_button_number.html
+            if (event->xbutton.button > 3) break;
             ctx->tool_force_align = (event->xbutton.state & ShiftMask);
 
             cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
@@ -208,6 +205,7 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
             break;
         case ButtonRelease:
         {
+            if (event->xbutton.button > 3) break;
             int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
 
             cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
@@ -236,7 +234,6 @@ void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* contin
             shouldRefresh = 1;
             break;
         case KeyPress:
-
             break;
     }
 
@@ -290,13 +287,12 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
     // http://www.mirbsd.org/htman/i386/man3/XGetVisualInfo.htm
     XVisualInfo* info_list = XGetVisualInfo (display, VisualIDMask, &template, &visual_count);
     assert(visual_count == 1);
-    *out_info = info_list[0];
-    XFree(info_list);
 
     // 24 or 32 bit depth
     if (info_list->depth != 24 && info_list->depth != 32)
     {
         fprintf(stderr, "XVisual has invalid depth: %d\n", info_list->depth);
+        XFree(info_list);
         return 0;
     }
 
@@ -308,9 +304,12 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
     if (info_list->class != TrueColor && info_list->class != DirectColor)
     {
         fprintf(stderr, "XVisual is using a strange: %d\n", info_list->class);
+        XFree(info_list);
         return 0;
     }
 
+    *out_info = info_list[0];
+    XFree(info_list);
     return 1;
 }
 

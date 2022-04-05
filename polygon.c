@@ -38,15 +38,14 @@ void cc_polygon_shutdown(CcPolygon* p)
 
 void cc_polygon_add(CcPolygon* p, CcCoord x)
 {   
-    int k = p->count;
-
-    if (k + 1 > p->capacity)
+    if (p->count + 1 >= p->capacity)
     {
         int n = MAX(16, p->capacity * 2);
+        printf("growing: %d\n", n);
         p->points = realloc(p->points, sizeof(CcCoord) * n);
         p->capacity = n;
     }
-    p->points[k] = x;
+    p->points[p->count] = x;
     ++p->count;
 }
 
@@ -55,9 +54,10 @@ void cc_polygon_clear(CcPolygon* p)
     if (p->capacity > 0)
     {
         free(p->points);
+        p->points = NULL;
         p->capacity = 0;
-        p->count = 0;
     }
+    p->count = 0;
 }
 
 void cc_polygon_update_last(CcPolygon* p, CcCoord x, int align)
@@ -282,11 +282,11 @@ int scanline_crossings_(const CcCoord* points, const CriticalValue* y_dirs, int 
                || (end.y < scan_y && scan_y < start.y))
             {
                 assert(end.y != start.y);
-                int inv_m = (end.x - start.x) * 10000 / (end.y - start.y);
-                int fy = scan_y - start.y;
-                int fx = (fy * inv_m) / 10000;
+                double inv_m = (double)(end.x - start.x) / (double)(end.y - start.y);
+                double fy = (double)(scan_y - start.y);
+                double fx = (fy * inv_m);
 
-                out_x[crossings] = start.x + fx;
+                out_x[crossings] = (int)round((double)start.x + fx);
                 ++crossings;
             }
         }
@@ -295,9 +295,11 @@ int scanline_crossings_(const CcCoord* points, const CriticalValue* y_dirs, int 
 }
 
 static
-int crossing_compare_(const void *a, const void *b)
+int crossing_compare_(const void *ap, const void *bp)
 {
-    return *((int*)a) - *((int*)b);
+    double a = *((int*)ap);
+    double b = *((int*)bp);
+    return a - b;
 }
 
 // requires:

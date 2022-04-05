@@ -401,7 +401,6 @@ void settle_polygon_(PaintContext* ctx)
 
         if (ctx->shape_flags & SHAPE_FILL)
         {
-            printf("FILLING\n");
             cc_bitmap_fill_polygon(
                     b, 
                     ctx->polygon.points,
@@ -1054,6 +1053,7 @@ void paint_select(PaintContext* ctx, int x, int y, int w, int h)
 
     if (ctx->select_mode == SELECT_IGNORE_BG)
     {
+        /* remove background color */
         cc_bitmap_replace(b, ctx->bg_color, COLOR_CLEAR);
     }
 
@@ -1077,6 +1077,8 @@ void paint_select(PaintContext* ctx, int x, int y, int w, int h)
 
 void paint_select_polygon(PaintContext* ctx)
 {
+    paint_set_tool(ctx, TOOL_SELECT_POLYGON);
+
     cc_polygon_cleanup(&ctx->polygon, 1);
     if (ctx->polygon.count < 3) return;
 
@@ -1084,6 +1086,7 @@ void paint_select_polygon(PaintContext* ctx)
     CcRect rect = cc_polygon_rect(&ctx->polygon);
     if (!cc_rect_intersect(rect, cc_layer_rect(l), &rect)) return;
 
+    /* create mask from polygon */
     CcCoord shift = { -rect.x, -rect.y };
     cc_polygon_shift(&ctx->polygon, shift);
 
@@ -1091,6 +1094,7 @@ void paint_select_polygon(PaintContext* ctx)
     cc_bitmap_clear(mask, COLOR_CLEAR);
     cc_bitmap_fill_polygon(mask, ctx->polygon.points, ctx->polygon.count, COLOR_WHITE);
 
+    /* copy selection into new bitmap */
     CcBitmap* b = cc_bitmap_create(rect.w, rect.h);
     cc_bitmap_clear(b, bg_color_(ctx));
     cc_bitmap_blit(
@@ -1104,9 +1108,11 @@ void paint_select_polygon(PaintContext* ctx)
 
     if (ctx->select_mode == SELECT_IGNORE_BG)
     {
+        /* remove background color */
         cc_bitmap_replace(b, ctx->bg_color, COLOR_CLEAR);
     }
 
+    /* apply mask to selection */
     cc_bitmap_blit(mask, b, 0, 0, 0, 0, rect.w, rect.h, COLOR_BLEND_MULTIPLY);
 
     CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
