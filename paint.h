@@ -19,9 +19,9 @@
 
 #include "layer.h"
 #include "undo_queue.h"
+#include "polygon.h"
 
 /* no Xlib allowed here */
-
 
 /*
 TODO:
@@ -98,6 +98,7 @@ typedef enum
     TOOL_ELLIPSE,
     TOOL_ERASER,
     TOOL_POLYGON,
+    TOOL_SELECT_POLYGON,
     TOOL_SELECT_RECTANGLE,
     TOOL_COUNT,
 } PaintTool;
@@ -135,7 +136,7 @@ enum {
 
 typedef struct
 {
-    Layer layers[LAYER_COUNT];
+    CcLayer layers[LAYER_COUNT];
     int active_layer;
 
     PaintTool tool;
@@ -145,7 +146,7 @@ typedef struct
     SelectMode select_mode;
     BucketMode bucket_mode;
 
-    Viewport viewport;
+    CcViewport viewport;
 
     int max_undo;
 
@@ -178,7 +179,8 @@ typedef struct
     size_t paste_board_size;
     unsigned char* paste_board_data;
 
-    UndoQueue undo;
+    CcPolygon polygon;
+    CcUndoQueue undo;
 
     char open_file_path[OS_PATH_MAX];
 } PaintContext;
@@ -207,6 +209,7 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button);
 void paint_tool_move(PaintContext* ctx, int x, int y);
 void paint_tool_update(PaintContext* ctx);
 void paint_tool_up(PaintContext* ctx, int x, int y, int button);
+void paint_tool_cancel(PaintContext* ctx);
 
 int paint_w(const PaintContext* ctx);
 int paint_h(const PaintContext* ctx);
@@ -221,10 +224,11 @@ void paint_paste(PaintContext* ctx);
 
 void paint_select_all(PaintContext* ctx);
 void paint_select(PaintContext* ctx, int x, int y, int w, int h);
+void paint_select_polygon(PaintContext* ctx);
 void paint_select_clear(PaintContext* ctx);
 
 void paint_set_color(PaintContext* ctx, uint32_t color, int fg);
-void paint_set_font(PaintContext* ctx, Layer* layer, int font);
+void paint_set_font(PaintContext* ctx, CcLayer* layer, int font);
 
 const char* paint_font_name(int index);
 int paint_font_count();

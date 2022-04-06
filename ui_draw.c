@@ -40,6 +40,8 @@ typedef struct
     Visual* x_visual;
     GC x_gc;
     XVisualInfo x_visual_info;
+    XColor select_bright;
+    XColor select_dark;
 
 #ifdef FEATURE_SHM
     // "it will have a lifetime at least as long as that of the ... XImage"
@@ -54,7 +56,7 @@ Widget scroll_w = NULL;
 XtIntervalId g_down_timer = 0;
 
 static
-void copy_bitmap_to_ximage_(XImage* dest, const Bitmap* src, const XVisualInfo* info)
+void copy_bitmap_to_ximage_(XImage* dest, const CcBitmap* src, const XVisualInfo* info)
 {
     int comps[4];
     int i;
@@ -69,7 +71,7 @@ void copy_bitmap_to_ximage_(XImage* dest, const Bitmap* src, const XVisualInfo* 
             // Fast path
             // https://groups.google.com/g/comp.windows.x/c/c4tjX7UiuVU
             uint8_t* raw_data = (uint8_t*)src->data;
-            memcpy(dest->data, raw_data + 1, src->w * src->h * sizeof(uint32_t));
+            memcpy(dest->data, raw_data + 1, src->w * src->h * sizeof(uint32_t) - 1);
         }
         else
         {
@@ -94,7 +96,7 @@ void copy_bitmap_to_ximage_(XImage* dest, const Bitmap* src, const XVisualInfo* 
 #define DRAW_PADDING 64
 
 static
-void update_scroll_()
+void update_scroll_(void)
 {
     int n = 0;
     Arg args[UI_ARGS_MAX];
@@ -135,7 +137,7 @@ void update_scroll_()
 }
 
 static
-void resize_view_()
+void resize_view_(void)
 {
     int n = 0;
     Arg args[UI_ARGS_MAX];
@@ -171,90 +173,100 @@ void timer_fire_(XtPointer client_data, XtIntervalId* id)
     }
 }
 
+
 static
-void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* continue_dispatch)
+void ui_cb_draw_input_(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 {
-    Display *dpy = event->xany.display;
     PaintContext* ctx = &g_paint_ctx;
 
-    int x, y;
-    int shouldRefresh = 0;
-    // http://xahlee.info/linux/linux_x11_mouse_button_number.html
-    if (event->xbutton.button > 3) {
-        return;
-    }
-
-    switch (event->type)
+    XmDrawingAreaCallbackStruct *cbs = (XmDrawingAreaCallbackStruct*)call_data;
+    XEvent *event = cbs->event;
+    if (cbs->reason == XmCR_INPUT) 
     {
-        case ButtonPress:
-            ctx->tool_force_align = (event->xbutton.state & ShiftMask);
+        Display *dpy = event->xany.display;
 
-            viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
-            paint_tool_down(ctx, x, y, event->xbutton.button);
-
-            if (g_down_timer != 0)
-            {
-                XtRemoveTimeOut(g_down_timer);
-            }
-            if (ctx->request_tool_timer)
-            {
-                timer_fire_((XPointer)ctx->tool, NULL);
-            }
-
-            shouldRefresh = 1;
-            break;
-        case ButtonRelease:
+        int x, y;
+        int shouldRefresh = 0;
+        switch (event->type)
         {
-            int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
+            case ButtonPress:
+                // http://xahlee.info/linux/linux_x11_mouse_button_number.html
+                if (event->xbutton.button > 3) break;
+                ctx->tool_force_align = (event->xbutton.state & ShiftMask);
 
-            viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
-            paint_tool_up(ctx, x, y, event->xbutton.button);
+                cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+                paint_tool_down(ctx, x, y, event->xbutton.button);
 
-            if (g_down_timer != 0)
+                if (g_down_timer != 0)
+                {
+                    XtRemoveTimeOut(g_down_timer);
+                }
+                if (ctx->request_tool_timer)
+                {
+                    timer_fire_((XPointer)ctx->tool, NULL);
+                }
+
+                shouldRefresh = 1;
+                break;
+            case ButtonRelease:
             {
-                XtRemoveTimeOut(g_down_timer);
+                if (event->xbutton.button > 3) break;
+                int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
+
+                cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+                paint_tool_up(ctx, x, y, event->xbutton.button);
+
+                if (g_down_timer != 0)
+                {
+                    XtRemoveTimeOut(g_down_timer);
+                }
+
+                ui_refresh_tool();
+                shouldRefresh = 1;
+
+                if (should_update_scroll) update_scroll_();
+
+                if (ctx->tool == TOOL_TEXT &&
+                        ctx->active_layer == LAYER_OVERLAY)
+                    ui_setup_text_dialog();
+                break;
             }
+            case MotionNotify:
+                ctx->tool_force_align = (event->xbutton.state & ShiftMask);
 
-            ui_refresh_tool();
-            shouldRefresh = 1;
-
-            if (should_update_scroll) update_scroll_();
-
-            if (ctx->tool == TOOL_TEXT &&
-                    ctx->active_layer == LAYER_OVERLAY)
-                ui_setup_text_dialog();
-            break;
+                cc_viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
+                paint_tool_move(ctx, x, y);
+                shouldRefresh = 1;
+                break;
+            case KeyPress:
+            {
+                int key_sym = XLookupKeysym(&event->xkey, 0);
+                if (key_sym == XK_Escape)
+                {
+                    paint_tool_cancel(ctx);
+                }
+                break;
+            }
         }
-        case MotionNotify:
-            ctx->tool_force_align = (event->xbutton.state & ShiftMask);
 
-            viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
-            paint_tool_move(ctx, x, y);
-            shouldRefresh = 1;
-            break;
-    }
-
-
-    if (shouldRefresh)
-    {
-        *continue_dispatch = 0;
-        if (ctx->tool == TOOL_EYE_DROPPER)
+        if (shouldRefresh)
         {
-            ui_set_color(g_main_w, ctx->fg_color, 1);
-            ui_set_color(g_main_w, ctx->bg_color, 0);
+            if (ctx->tool == TOOL_EYE_DROPPER)
+            {
+                ui_set_color(g_main_w, ctx->fg_color, 1);
+                ui_set_color(g_main_w, ctx->bg_color, 0);
+            }
+            ui_refresh_drawing(0);
         }
-        ui_refresh_drawing(0);
     }
+    if (g_ready) ui_refresh_drawing(1);
 }
 
-void ui_cb_draw_update(Widget widget, XtPointer client_data, XtPointer call_data)
+
+void ui_cb_draw_update(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 {
-    if (g_ready)
-    {
-        ui_refresh_drawing(1);
-    }
+    if (g_ready) ui_refresh_drawing(1);
 }
-
 
 static
 int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info)
@@ -266,14 +278,12 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
     // http://www.mirbsd.org/htman/i386/man3/XGetVisualInfo.htm
     XVisualInfo* info_list = XGetVisualInfo (display, VisualIDMask, &template, &visual_count);
     assert(visual_count == 1);
-    *out_info = info_list[0];
-    XFree(info_list);
-
 
     // 24 or 32 bit depth
     if (info_list->depth != 24 && info_list->depth != 32)
     {
         fprintf(stderr, "XVisual has invalid depth: %d\n", info_list->depth);
+        XFree(info_list);
         return 0;
     }
 
@@ -285,9 +295,12 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
     if (info_list->class != TrueColor && info_list->class != DirectColor)
     {
         fprintf(stderr, "XVisual is using a strange: %d\n", info_list->class);
+        XFree(info_list);
         return 0;
     }
 
+    *out_info = info_list[0];
+    XFree(info_list);
     return 1;
 }
 
@@ -299,16 +312,26 @@ Widget ui_setup_draw_area(Widget parent)
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
+    // Need to set custom translations in order to get mouse motion events.
+    // The PDF manual was helpful for setting up these translations.
+    // We used to use XtAddEventHandler which worked for mouse motion, but disrupted key events.
+    String translations = "<Btn1Motion>: DrawingAreaInput() ManagerGadgetButtonMotion()\n \
+                           <Btn1Up>: DrawingAreaInput() ManagerGadgetActivate()\n \
+                           <Btn1Down>: DrawingAreaInput() ManagerGadgetArm()\n \
+                           <Btn3Motion>: DrawingAreaInput() ManagerGadgetButtonMotion()\n \
+                           <Btn3Up>: DrawingAreaInput() ManagerGadgetActivate()\n \
+                           <Btn3Down>: DrawingAreaInput() ManagerGadgetArm()\n \
+                           <Key>osfSelect: DrawingAreaInput() ManagerGadgetSelect()\n \
+                           <Key>osfActivate: DrawingAreaInput() ManagerParentActivate()\n \
+                           <Key>osfHelp: DrawingAreaInput() ManagerGadgetHelp()\n \
+                           <KeyDown>: DrawingAreaInput() ManagerGadgetKeyInput()\n \
+                           <KeyUp>: DrawingAreaInput()";
+
+    XtSetArg(args[n], XmNtranslations, XtParseTranslationTable(translations)); ++n;
     draw_area = XmCreateDrawingArea(parent, "drawing_area", args, n);
 
-    XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_update, NULL);
-    XtAddEventHandler(
-            draw_area,
-            ButtonPressMask | ButtonReleaseMask | Button1MotionMask | Button3MotionMask,
-            False,
-            cb_draw_stroke_,
-            NULL
-            );
+    // not working for some reason
+    XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_input_, NULL);
     XtAddCallback(draw_area, XmNexposeCallback, ui_cb_draw_update, NULL);
     XtAddCallback(draw_area, XmNresizeCallback, ui_cb_draw_update, NULL);
 
@@ -341,6 +364,13 @@ Widget ui_setup_draw_area(Widget parent)
     {
         printf("X11 color mask. red: %08lx. green: %08lx. blue: %08lx\n", g_buffer.x_visual_info.red_mask, g_buffer.x_visual_info.green_mask, g_buffer.x_visual_info.blue_mask);
     }
+
+    Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
+
+    XParseColor(display, screen_colormap, "#000000", &buffer->select_dark);
+    XAllocColor(display, screen_colormap, &buffer->select_dark);
+    XParseColor(display, screen_colormap, "#FFFFFF", &buffer->select_bright);
+    XAllocColor(display, screen_colormap, &buffer->select_bright);
 
     XtManageChild(draw_area);
 
@@ -381,7 +411,7 @@ void shm_shutdown_(DrawInfo* ctx, Display* dpy)
 }
 
 static
-int shm_prepare_(DrawInfo* ctx, Display* dpy, const Layer* composite)
+int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
 {
 #ifndef FEATURE_SHM
     assert(0);
@@ -486,7 +516,7 @@ void ui_refresh_drawing(int clear)
 
     paint_composite(ctx);
 
-    const Layer* composite = ctx->layers + LAYER_COMPOSITE;
+    const CcLayer* composite = ctx->layers + LAYER_COMPOSITE;
 
     int w = composite->bitmaps->w;
     int h = composite->bitmaps->h;
@@ -535,29 +565,30 @@ void ui_refresh_drawing(int clear)
 
     if (ctx->active_layer == LAYER_OVERLAY)
     {
-        const Layer* l = ctx->layers + ctx->active_layer;
+        const CcLayer* l = ctx->layers + ctx->active_layer;
         if (l->bitmaps != NULL)
         {
-            char dash_pattern[] = { 4, 2 };
-            XSetDashes(dpy, buffer->x_gc, 0, dash_pattern, 2);
+            int x = (l->x - ctx->viewport.paint_x) * ctx->viewport.zoom;
+            int y = (l->y - ctx->viewport.paint_y) * ctx->viewport.zoom;
+            int w = (l->bitmaps->w) * ctx->viewport.zoom - 1;
+            int h = (l->bitmaps->h) * ctx->viewport.zoom - 1;
+
+
             XSetLineAttributes(dpy, buffer->x_gc, 1, LineOnOffDash, CapButt, JoinMiter);
 
-            XDrawRectangle(
-                    dpy,
-                    window,
-                    buffer->x_gc,
-                    (l->x - ctx->viewport.paint_x) * ctx->viewport.zoom,
-                    (l->y - ctx->viewport.paint_y) * ctx->viewport.zoom,
-                    (l->bitmaps->w) * ctx->viewport.zoom - 1,
-                    (l->bitmaps->h) * ctx->viewport.zoom - 1
-           );
+            char dash_pattern[] = { 4, 4 };
+            XSetDashes(dpy, buffer->x_gc, 0, dash_pattern, 2);
+            XSetForeground(dpy, buffer->x_gc, buffer->select_bright.pixel);
+            XDrawRectangle(dpy, window, buffer->x_gc, x, y, w, h);
+
+            XSetDashes(dpy, buffer->x_gc, 4, dash_pattern, 2);
+            XSetForeground(dpy, buffer->x_gc, buffer->select_dark.pixel);
+            XDrawRectangle(dpy, window, buffer->x_gc, x, y, w, h);
         }
     }
 
     XFlush(dpy);
 }
-
-
 
 Widget ui_setup_scroll_area(Widget parent)
 {

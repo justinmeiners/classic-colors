@@ -1,0 +1,34 @@
+/* XPM */
+static char *icon_polygon[] = {
+/* columns rows colors chars-per-pixel */
+"24 24 4 1 ",
+"  c black",
+". c #484848",
+"X c #DDDDDD",
+"o c white",
+/* pixels */
+"oooooooooooooooooooooooo",
+"ooo    ..Xoooooooooooooo",
+"ooo           oooooooooo",
+"ooo  ooooX.   oooooooooo",
+"ooo .ooooooo  oooooooooo",
+"ooo .ooooooo  oooooooooo",
+"ooo .ooooooo. oooooooooo",
+"ooX oooooooo. oooooooooo",
+"oo  oooooooo.    .oooooo",
+"oo  oooooooo.          o",
+"oo  oooooooooooooX ... o",
+"oo  ooooooooooooooooo. o",
+"oo  ooooooooooooooooo. o",
+"oo  ooooooooooooooooo. o",
+"oX Xooooooooooooooooo. o",
+"o. oooooooooooooooooo. o",
+"o. oooooooooooooooooX  o",
+"o  ooooooooooooooooo  oo",
+"o  ooooooooooooooooo  oo",
+"o.      oooooooooooo  oo",
+"o.              oooo  oo",
+"oooooooX......        oo",
+"oooooooooooooooX .....oo",
+"oooooooooooooooooooooooo"
+};

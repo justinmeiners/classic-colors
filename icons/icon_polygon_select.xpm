@@ -1,7 +1,7 @@
 /* XPM */
-static char *PolygonSelect[] = {
+static char *icon_polygon_select[] = {
 /* columns rows colors chars-per-pixel */
-"24 24 83 1",
+"24 24 83 1 ",
 "  c black",
 ". c gray1",
 "X c #090909",
@@ -84,7 +84,7 @@ static char *PolygonSelect[] = {
 "~ c gray99",
 "^ c #FDFDFD",
 "/ c #FEFEFE",
-"( c gray100",
+"( c white",
 /* pixels */
 "((((((((((((((((((((((((",
 "(((RW(((((((((((((((((((",

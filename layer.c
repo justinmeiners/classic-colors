@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <wchar.h>
 
-
 #include "layer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -32,7 +31,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "stb_truetype.h" /* http://nothings.org/stb/stb_truetype.h */
 
-void layer_init(Layer* layer, int x, int y)
+void cc_layer_init(CcLayer* layer, int x, int y)
 {
     layer->bitmaps = NULL;
     layer->x = x;
@@ -47,115 +46,114 @@ void layer_init(Layer* layer, int x, int y)
     layer->font = -1;
 }
 
-void layer_shutdown(Layer* layer)
+void cc_layer_shutdown(CcLayer* layer)
 {
-    layer_set_text(layer, NULL); 
-    layer_set_bitmap(layer, NULL);
+    cc_layer_set_text(layer, NULL); 
+    cc_layer_set_bitmap(layer, NULL);
 }
 
-void layer_reset(Layer* layer)
+void cc_layer_reset(CcLayer* layer)
 {
-    layer_set_text(layer, NULL); 
-    layer_set_bitmap(layer, NULL);
+    cc_layer_set_text(layer, NULL); 
+    cc_layer_set_bitmap(layer, NULL);
     layer->blend = COLOR_BLEND_OVERLAY;
 }
 
-void layer_set_bitmap(Layer* layer, Bitmap* new_bitmap)
+void cc_layer_set_bitmap(CcLayer* layer, CcBitmap* new_bitmap)
 {
     if (layer->bitmaps)
     {
-        bitmap_destroy(layer->bitmaps);
+        cc_bitmap_destroy(layer->bitmaps);
     }
     layer->bitmaps = new_bitmap;
-    layer_render(layer);
+    cc_layer_render(layer);
 }
 
-void layer_flip(Layer* layer, int horiz)
+void cc_layer_flip(CcLayer* layer, int horiz)
 {
-    Bitmap* n = bitmap_create(layer->bitmaps->w, layer->bitmaps->h);
+    CcBitmap* n = cc_bitmap_create(layer->bitmaps->w, layer->bitmaps->h);
     if (horiz)
     {
-        bitmap_flip_horiz(layer->bitmaps, n);
+        cc_bitmap_flip_horiz(layer->bitmaps, n);
     }
     else
     {
-        bitmap_flip_vert(layer->bitmaps, n);
+        cc_bitmap_flip_vert(layer->bitmaps, n);
     }
-    layer_set_bitmap(layer, n);
+    cc_layer_set_bitmap(layer, n);
 }
 
-void layer_rotate_90(Layer* layer, int repeat)
+void cc_layer_rotate_90(CcLayer* layer, int repeat)
 {
-    Bitmap* current = bitmap_create_copy(layer->bitmaps);
-    Bitmap* next = bitmap_create(layer->bitmaps->h, layer->bitmaps->w);
+    CcBitmap* current = cc_bitmap_create_copy(layer->bitmaps);
+    CcBitmap* next = cc_bitmap_create(layer->bitmaps->h, layer->bitmaps->w);
 
     while (repeat > 0) 
     {
-        bitmap_rotate_90(current, next);
+        cc_bitmap_rotate_90(current, next);
 
-        Bitmap* temp = current;
+        CcBitmap* temp = current;
         current = next;
         next = temp;
         --repeat;
     }
 
-    layer_set_bitmap(layer, current);
-    bitmap_destroy(next);
+    cc_layer_set_bitmap(layer, current);
+    cc_bitmap_destroy(next);
 }
 
 
-void layer_rotate_angle(Layer* layer, double angle, uint32_t bg_color)
+void cc_layer_rotate_angle(CcLayer* layer, double angle, uint32_t bg_color)
 {
-    Transform rotate = transform_rotate(-M_PI * angle / 180.0);
-    Bitmap* b = bitmap_transform(layer->bitmaps, NULL, rotate, bg_color);
-    layer_set_bitmap(layer, b);
+    CcTransform rotate = cc_transform_rotate(-M_PI * angle / 180.0);
+    CcBitmap* b = cc_bitmap_transform(layer->bitmaps, NULL, rotate, bg_color);
+    cc_layer_set_bitmap(layer, b);
 }
 
-void layer_stretch(Layer* layer, int w, int h, int w_angle, int h_angle, uint32_t bg_color)
+void cc_layer_stretch(CcLayer* layer, int w, int h, int w_angle, int h_angle, uint32_t bg_color)
 {
     double sw = (double)w / 100.0;
     double sh = (double)h / 100.0;
-    Transform scale = transform_scale(sw, sh);
+    CcTransform scale = cc_transform_scale(sw, sh);
 
     double ax = ((double)w_angle / 180.0) * M_PI;
     double ay = ((double)h_angle / 180.0) * -M_PI;
 
-    Transform skew = transform_skew(ax, ay);
-    Transform final = transform_concat(scale, skew);
+    CcTransform skew = cc_transform_skew(ax, ay);
+    CcTransform final = cc_transform_concat(scale, skew);
 
-    Bitmap* b = bitmap_transform(layer->bitmaps, NULL, final, bg_color);
-    layer_set_bitmap(layer, b);
+    CcBitmap* b = cc_bitmap_transform(layer->bitmaps, NULL, final, bg_color);
+    cc_layer_set_bitmap(layer, b);
 }
 
 
-void layer_resize(Layer* layer, int new_w, int new_h, uint32_t bg_color)
+void cc_layer_resize(CcLayer* layer, int new_w, int new_h, uint32_t bg_color)
 {
-    const Bitmap* src = layer->bitmaps;
-    Bitmap* b = bitmap_create(new_w, new_h);
+    const CcBitmap* src = layer->bitmaps;
+    CcBitmap* b = cc_bitmap_create(new_w, new_h);
 
-    bitmap_clear(b, bg_color);
-    bitmap_blit(src, b, 0, 0, 0, 0, src->w, src->h, COLOR_BLEND_REPLACE);
+    cc_bitmap_clear(b, bg_color);
+    cc_bitmap_blit(src, b, 0, 0, 0, 0, src->w, src->h, COLOR_BLEND_REPLACE);
 
-    layer_set_bitmap(layer, b);
+    cc_layer_set_bitmap(layer, b);
 }
 
-
-void layer_ensure_size(Layer* layer, int w, int h)
+void cc_layer_ensure_size(CcLayer* layer, int w, int h)
 {
     if (layer->bitmaps == NULL ||
         layer->bitmaps->w != w ||
         layer->bitmaps->h != h)
     {
-        layer_set_bitmap(layer, bitmap_create(w, h));
+        cc_layer_set_bitmap(layer, cc_bitmap_create(w, h));
     }
 }
 
-void layer_render(Layer* layer)
+void cc_layer_render(CcLayer* layer)
 {
     if (layer->text && layer->bitmaps && layer->font != -1)
     {
-        bitmap_clear(layer->bitmaps, COLOR_CLEAR);
-        text_render(
+        cc_bitmap_clear(layer->bitmaps, COLOR_CLEAR);
+        cc_text_render(
                 layer->bitmaps,
                 layer->text,
                 &layer->font_info,
@@ -166,7 +164,7 @@ void layer_render(Layer* layer)
     }
 }
 
-void layer_set_text(Layer* layer, const wchar_t* text)
+void cc_layer_set_text(CcLayer* layer, const wchar_t* text)
 {
     if (!text)
     {
@@ -184,7 +182,7 @@ void layer_set_text(Layer* layer, const wchar_t* text)
         }
         wcsncpy(layer->text, text, len);
     }
-    layer_render(layer);
+    cc_layer_render(layer);
 }
 
 
@@ -208,7 +206,7 @@ static void write_(void* context, void* chunk_data, int chunk_size)
 }
 
 
-unsigned char* bitmap_compress(const Bitmap* b, size_t* out_size)
+unsigned char* cc_bitmap_compress(const CcBitmap* b, size_t* out_size)
 {
     assert(b);
     
@@ -238,20 +236,18 @@ unsigned char* bitmap_compress(const Bitmap* b, size_t* out_size)
     return NULL;
 }
 
-Bitmap* bitmap_decompress(unsigned char* compressed_data, size_t compressed_size)
+CcBitmap* cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed_size)
 {
     int w, h, comps;
     unsigned char* data = stbi_load_from_memory(compressed_data, compressed_size, &w, &h, &comps, 0);
     assert(comps == 4);
 
-    Bitmap* b = bitmap_create(w, h);
+    CcBitmap* b = cc_bitmap_create(w, h);
     // TODO: byte swap
     memcpy(b->data, data, sizeof(uint32_t) * w * h);
 	free(data);
     return b;
 }
-
-
 
 // - Don't modify the string, just give ranges (we only take away).
 // - Every character should be printed, except:
@@ -263,7 +259,6 @@ typedef struct {
     int end;
     int width;
 } LineRange;
-
 
 int text_wordwrap(
         LineRange* lines,
@@ -380,12 +375,10 @@ int text_wordwrap(
 #undef I
 }
 
-
-
-static int test_advance_(const wchar_t* text, int i, void* ctx) {
+static
+int test_advance_(const wchar_t* text, int i, void* ctx) {
     return 1;
 }
-
 
 void test_text_wordwrap(void)
 {
@@ -413,15 +406,16 @@ void test_text_wordwrap(void)
     }
 }
 
-static void render_(
+static
+void render_(
         const stbtt_fontinfo* font_info,
         int line_height,
-        TextAlign alignment,
+        CcTextAlign alignment,
         uint32_t color,
         const wchar_t* text,
         const LineRange* lines,
         int line_count,
-        Bitmap* bitmap
+        CcBitmap* bitmap
         )
 {
     float scale = stbtt_ScaleForPixelHeight(font_info, line_height);
@@ -433,7 +427,7 @@ static void render_(
     ascent = (int)roundf(ascent * scale);
     descent = (int)roundf(descent * scale);
 
-    Bitmap* glyph_map = bitmap_create(line_height * 3, line_height);
+    CcBitmap* glyph_map = cc_bitmap_create(line_height * 3, line_height);
     unsigned char* glyph_mask = malloc(glyph_map->w * glyph_map->h);
 
     int i = 0;
@@ -483,8 +477,8 @@ static void render_(
                 assert(c_y2 - c_y1 <= glyph_map->w);
                 assert(c_x2 - c_x1 <= glyph_map->h);
 
-                bitmap_copy_mask(glyph_map, glyph_mask, color);
-                bitmap_blit(
+                cc_bitmap_copy_mask(glyph_map, glyph_mask, color);
+                cc_bitmap_blit(
                         glyph_map,
                         bitmap,
                         0,
@@ -509,7 +503,7 @@ static void render_(
     }
 
     free(glyph_mask);
-    bitmap_destroy(glyph_map);
+    cc_bitmap_destroy(glyph_map);
 }
 
 typedef struct
@@ -518,7 +512,8 @@ typedef struct
     float scale;
 } WordWrapData;
 
-static int kern_advance_(const wchar_t* text, int i, void* ctx)
+static
+int kern_advance_(const wchar_t* text, int i, void* ctx)
 {
     const WordWrapData* a = ctx;
     const stbtt_fontinfo* font_info = a->font_info;
@@ -532,12 +527,12 @@ static int kern_advance_(const wchar_t* text, int i, void* ctx)
     return  (int)roundf((ax + kern) * scale);
 }
 
-void text_render(
-        Bitmap* bitmap,
+void cc_text_render(
+        CcBitmap* bitmap,
         const wchar_t* text,
         const stbtt_fontinfo* font_info,
         int font_size,
-        TextAlign align,
+        CcTextAlign align,
         uint32_t font_color
     )
 {
