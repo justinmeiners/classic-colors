@@ -329,9 +329,9 @@ ToolInfo g_tools[] = {
     { 
         TOOL_SELECT_POLYGON,
         OPTION_SELECT_MODE,
-        "Select polygon",
+        "Lasso select",
         icon_polygon_select2,
-        "Click and drag to add segments to the selection polygon. The selection can be moved with click and drag."
+        "Click and drag to outline a selection area. The selection can be moved with click and drag."
     },
 };
 
