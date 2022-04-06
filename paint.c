@@ -195,7 +195,7 @@ int save_file_(PaintContext* ctx, const char* path)
     int comps[4];
     for (int i = 0; i < n; ++i)
     {
-        color_unpack(b->data[i], comps);
+        cc_color_unpack(b->data[i], comps);
         for (int j = 0; j < 4; ++j)
         {
             to_save[i * 4 + j] = comps[j];

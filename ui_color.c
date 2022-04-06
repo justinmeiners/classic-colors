@@ -41,7 +41,7 @@ uint32_t xcolor_to_color(const XColor* c)
     {
         comps[i] = (comps[i] * 256) / 65536;
     }
-    return color_pack(comps);
+    return cc_color_pack(comps);
 }
 
 
@@ -49,7 +49,7 @@ static
 void format_color_hex_string(char* out, uint32_t color)
 {
     int comp[4];
-    color_unpack(color, comp);
+    cc_color_unpack(color, comp);
     snprintf(out, COLOR_NAME_MAX, "#%02X%02X%02X", comp[0], comp[1], comp[2]);
 }
 
@@ -190,7 +190,7 @@ static void rgb_changed_(Widget widget, XtPointer client_data, XtPointer call_da
     comps[2] = MAX(MIN(atoi(blue_str), 255), 0);
 
 
-    uint32_t color = color_pack(comps);
+    uint32_t color = cc_color_pack(comps);
 
     char name[COLOR_NAME_MAX];
     format_color_hex_string(name, color);
@@ -263,7 +263,7 @@ static Widget setup_color_picker_(Widget parent, uint32_t color)
     // extended column
     Widget rowcol_v = XmCreateRowColumn(split_pane, "row_v", NULL, 0);
     int color_comps[4];
-    color_unpack(color, color_comps);
+    cc_color_unpack(color, color_comps);
 
     char scratch_buffer[SCRATCH_MAX];
     {

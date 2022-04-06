@@ -65,20 +65,20 @@ void cc_bitmap_copy_buffer(CcBitmap* b, unsigned char* rgba_buffer)
         {
             comps[j] = rgba_buffer[i * 4 + j];
         }
-        b->data[i] = color_pack(comps);
+        b->data[i] = cc_color_pack(comps);
     }
 }
 
 void cc_bitmap_copy_mask(CcBitmap* b, const unsigned char* mask_buffer, uint32_t color)
 {
     int comps[4];
-    color_unpack(color, comps);
+    cc_color_unpack(color, comps);
 
     int n = b->w * b->h;
     for (int i = 0; i < n; ++i)
     {
         comps[3] = mask_buffer[i];
-        b->data[i] = color_pack(comps);
+        b->data[i] = cc_color_pack(comps);
     }
 }
 
@@ -149,8 +149,8 @@ void cc_bitmap_blit_unsafe(
         { \
             int src_index = (src_x + x) + (src_y + y) * src->w; \
             int dst_index = (dst_x + x) + (dst_y + y) * dst->w; \
-            color_unpack(src->data[src_index], src_comps); \
-            color_unpack(dst->data[dst_index], dst_comps); \
+            cc_color_unpack(src->data[src_index], src_comps); \
+            cc_color_unpack(dst->data[dst_index], dst_comps); \
             code_ \
         } \
     }
@@ -167,26 +167,26 @@ void cc_bitmap_blit_unsafe(
             break;
         case COLOR_BLEND_OVERLAY:
             LOOP( 
-               color_blend_overlay(src_comps, dst_comps);
-               dst->data[dst_index] = color_pack(dst_comps);
+               cc_color_blend_overlay(src_comps, dst_comps);
+               dst->data[dst_index] = cc_color_pack(dst_comps);
             )
             break;
         case COLOR_BLEND_FULL:
             LOOP( 
-               color_blend_full(src_comps, dst_comps);
-               dst->data[dst_index] = color_pack(dst_comps);
+               cc_color_blend_full(src_comps, dst_comps);
+               dst->data[dst_index] = cc_color_pack(dst_comps);
             )
             break;
         case COLOR_BLEND_INVERT:
             LOOP(
-                color_blend_invert(src_comps, dst_comps);
-                dst->data[dst_index] = color_pack(dst_comps);
+                cc_color_blend_invert(src_comps, dst_comps);
+                dst->data[dst_index] = cc_color_pack(dst_comps);
             ) 
             break;
         case COLOR_BLEND_MULTIPLY:
             LOOP(
-                color_blend_multiply(src_comps, dst_comps);
-                dst->data[dst_index] = color_pack(dst_comps);
+                cc_color_blend_multiply(src_comps, dst_comps);
+                dst->data[dst_index] = cc_color_pack(dst_comps);
             ) 
             break;
     }
@@ -586,10 +586,10 @@ void cc_bitmap_invert_colors(CcBitmap* bitmap)
     for (int i = 0; i < N; ++i)
     {
         uint32_t color = bitmap->data[i];
-        comps[3] = color_component(color, 3);
+        comps[3] = cc_color_component(color, 3);
         for (int j = 0; j < 3; ++j)
-            comps[j] = 255 - color_component(color, j);
-        bitmap->data[i] = color_pack(comps);
+            comps[j] = 255 - cc_color_component(color, j);
+        bitmap->data[i] = cc_color_pack(comps);
     }
 }
 

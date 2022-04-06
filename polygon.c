@@ -41,7 +41,6 @@ void cc_polygon_add(CcPolygon* p, CcCoord x)
     if (p->count + 1 >= p->capacity)
     {
         int n = MAX(16, p->capacity * 2);
-        printf("growing: %d\n", n);
         p->points = realloc(p->points, sizeof(CcCoord) * n);
         p->capacity = n;
     }

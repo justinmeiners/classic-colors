@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "color.h"
 
-#define PREPARE(SRC, DST) color_unpack(SRC, src_comps); color_unpack(DST, dst_comps);
+#define PREPARE(SRC, DST) cc_color_unpack(SRC, src_comps); cc_color_unpack(DST, dst_comps);
 
 void color_blending_test()
 {
@@ -12,31 +12,31 @@ void color_blending_test()
 
     {
         PREPARE(COLOR_WHITE, COLOR_WHITE);
-        color_blend_invert(src_comps, dst_comps);
-        assert(color_pack(dst_comps) == COLOR_BLACK);
+        cc_color_blend_invert(src_comps, dst_comps);
+        assert(cc_color_pack(dst_comps) == COLOR_BLACK);
     }
     {
         PREPARE(COLOR_WHITE, COLOR_BLACK);
-        color_blend_invert(src_comps, dst_comps);
-        assert(color_pack(dst_comps) == COLOR_WHITE);
+        cc_color_blend_invert(src_comps, dst_comps);
+        assert(cc_color_pack(dst_comps) == COLOR_WHITE);
     }
     {
         PREPARE(0xFF000080, 0xFFFFFFFF);
-        color_blend_overlay(src_comps, dst_comps);
-        assert(color_pack(dst_comps) == 0xFF7F7FFF);
+        cc_color_blend_overlay(src_comps, dst_comps);
+        assert(cc_color_pack(dst_comps) == 0xFF7F7FFF);
     }
     {
         PREPARE(0xFF000080, 0xFFFFFFFF);
-        color_blend_full(src_comps, dst_comps);
-        assert(color_pack(dst_comps) == 0xFF7F7FFF);
+        cc_color_blend_full(src_comps, dst_comps);
+        assert(cc_color_pack(dst_comps) == 0xFF7F7FFF);
     }
     {
         PREPARE(0xFF000080, 0xFFFFFF80);
-        color_unpack(0xFF000080, dst_comps);
-        color_unpack(0xFF000080, src_comps);
+        cc_color_unpack(0xFF000080, dst_comps);
+        cc_color_unpack(0xFF000080, src_comps);
 
-        color_blend_full(src_comps, dst_comps);
-        assert(color_pack(dst_comps) == 0xFF0000c0);
+        cc_color_blend_full(src_comps, dst_comps);
+        assert(cc_color_pack(dst_comps) == 0xFF0000c0);
     }
 
 }
