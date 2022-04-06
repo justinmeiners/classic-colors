@@ -173,99 +173,90 @@ void timer_fire_(XtPointer client_data, XtIntervalId* id)
     }
 }
 
-static
-void cb_draw_stroke_(Widget w, void* client_data, XEvent* event, Boolean* continue_dispatch)
-{
-    Display *dpy = event->xany.display;
-    PaintContext* ctx = &g_paint_ctx;
-
-    int x, y;
-    int shouldRefresh = 0;
-
-    switch (event->type)
-    {
-        case ButtonPress:
-            // http://xahlee.info/linux/linux_x11_mouse_button_number.html
-            if (event->xbutton.button > 3) break;
-            ctx->tool_force_align = (event->xbutton.state & ShiftMask);
-
-            cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
-            paint_tool_down(ctx, x, y, event->xbutton.button);
-
-            if (g_down_timer != 0)
-            {
-                XtRemoveTimeOut(g_down_timer);
-            }
-            if (ctx->request_tool_timer)
-            {
-                timer_fire_((XPointer)ctx->tool, NULL);
-            }
-
-            shouldRefresh = 1;
-            break;
-        case ButtonRelease:
-        {
-            if (event->xbutton.button > 3) break;
-            int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
-
-            cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
-            paint_tool_up(ctx, x, y, event->xbutton.button);
-
-            if (g_down_timer != 0)
-            {
-                XtRemoveTimeOut(g_down_timer);
-            }
-
-            ui_refresh_tool();
-            shouldRefresh = 1;
-
-            if (should_update_scroll) update_scroll_();
-
-            if (ctx->tool == TOOL_TEXT &&
-                    ctx->active_layer == LAYER_OVERLAY)
-                ui_setup_text_dialog();
-            break;
-        }
-        case MotionNotify:
-            ctx->tool_force_align = (event->xbutton.state & ShiftMask);
-
-            cc_viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
-            paint_tool_move(ctx, x, y);
-            shouldRefresh = 1;
-            break;
-        case KeyPress:
-            break;
-    }
-
-    if (shouldRefresh)
-    {
-        *continue_dispatch = 0;
-        if (ctx->tool == TOOL_EYE_DROPPER)
-        {
-            ui_set_color(g_main_w, ctx->fg_color, 1);
-            ui_set_color(g_main_w, ctx->bg_color, 0);
-        }
-        ui_refresh_drawing(0);
-    }
-}
 
 static
 void ui_cb_draw_input_(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 {
-    printf("YO\n");
     PaintContext* ctx = &g_paint_ctx;
 
     XmDrawingAreaCallbackStruct *cbs = (XmDrawingAreaCallbackStruct*)call_data;
     XEvent *event = cbs->event;
     if (cbs->reason == XmCR_INPUT) 
     {
-        if (event->xany.type == KeyPress) 
+        Display *dpy = event->xany.display;
+
+        int x, y;
+        int shouldRefresh = 0;
+        switch (event->type)
         {
-            int key_sym = XLookupKeysym(&event->xkey, 0);
-            if (key_sym == XK_Escape)
+            case ButtonPress:
+                // http://xahlee.info/linux/linux_x11_mouse_button_number.html
+                if (event->xbutton.button > 3) break;
+                ctx->tool_force_align = (event->xbutton.state & ShiftMask);
+
+                cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+                paint_tool_down(ctx, x, y, event->xbutton.button);
+
+                if (g_down_timer != 0)
+                {
+                    XtRemoveTimeOut(g_down_timer);
+                }
+                if (ctx->request_tool_timer)
+                {
+                    timer_fire_((XPointer)ctx->tool, NULL);
+                }
+
+                shouldRefresh = 1;
+                break;
+            case ButtonRelease:
             {
-                paint_tool_cancel(ctx);
+                if (event->xbutton.button > 3) break;
+                int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
+
+                cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+                paint_tool_up(ctx, x, y, event->xbutton.button);
+
+                if (g_down_timer != 0)
+                {
+                    XtRemoveTimeOut(g_down_timer);
+                }
+
+                ui_refresh_tool();
+                shouldRefresh = 1;
+
+                if (should_update_scroll) update_scroll_();
+
+                if (ctx->tool == TOOL_TEXT &&
+                        ctx->active_layer == LAYER_OVERLAY)
+                    ui_setup_text_dialog();
+                break;
             }
+            case MotionNotify:
+                ctx->tool_force_align = (event->xbutton.state & ShiftMask);
+
+                cc_viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
+                paint_tool_move(ctx, x, y);
+                shouldRefresh = 1;
+                break;
+            case KeyPress:
+            {
+                int key_sym = XLookupKeysym(&event->xkey, 0);
+                if (key_sym == XK_Escape)
+                {
+                    paint_tool_cancel(ctx);
+                }
+                break;
+            }
+        }
+
+        if (shouldRefresh)
+        {
+            if (ctx->tool == TOOL_EYE_DROPPER)
+            {
+                ui_set_color(g_main_w, ctx->fg_color, 1);
+                ui_set_color(g_main_w, ctx->bg_color, 0);
+            }
+            ui_refresh_drawing(0);
         }
     }
     if (g_ready) ui_refresh_drawing(1);
@@ -321,17 +312,26 @@ Widget ui_setup_draw_area(Widget parent)
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
+    // Need to set custom translations in order to get mouse motion events.
+    // The PDF manual was helpful for setting up these translations.
+    // We used to use XtAddEventHandler which worked for mouse motion, but disrupted key events.
+    String translations = "<Btn1Motion>: DrawingAreaInput() ManagerGadgetButtonMotion()\n \
+                           <Btn1Up>: DrawingAreaInput() ManagerGadgetActivate()\n \
+                           <Btn1Down>: DrawingAreaInput() ManagerGadgetArm()\n \
+                           <Btn3Motion>: DrawingAreaInput() ManagerGadgetButtonMotion()\n \
+                           <Btn3Up>: DrawingAreaInput() ManagerGadgetActivate()\n \
+                           <Btn3Down>: DrawingAreaInput() ManagerGadgetArm()\n \
+                           <Key>osfSelect: DrawingAreaInput() ManagerGadgetSelect()\n \
+                           <Key>osfActivate: DrawingAreaInput() ManagerParentActivate()\n \
+                           <Key>osfHelp: DrawingAreaInput() ManagerGadgetHelp()\n \
+                           <KeyDown>: DrawingAreaInput() ManagerGadgetKeyInput()\n \
+                           <KeyUp>: DrawingAreaInput()";
+
+    XtSetArg(args[n], XmNtranslations, XtParseTranslationTable(translations)); ++n;
     draw_area = XmCreateDrawingArea(parent, "drawing_area", args, n);
 
-    XtAddEventHandler(
-            draw_area,
-            KeyReleaseMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | Button1MotionMask | Button3MotionMask,
-            True,
-            cb_draw_stroke_,
-            NULL
-            );
     // not working for some reason
-    //XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_input_, NULL);
+    XtAddCallback(draw_area, XmNinputCallback, ui_cb_draw_input_, NULL);
     XtAddCallback(draw_area, XmNexposeCallback, ui_cb_draw_update, NULL);
     XtAddCallback(draw_area, XmNresizeCallback, ui_cb_draw_update, NULL);
 
