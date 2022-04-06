@@ -64,7 +64,8 @@ void paint_undo_save(PaintContext* ctx, int x, int y, int w, int h)
     cc_undo_queue_push(&ctx->undo, patch);
 }
 
-static void paint_undo_save_full(PaintContext* ctx)
+static
+void paint_undo_save_full(PaintContext* ctx)
 {
     if (ctx->active_layer == LAYER_MAIN)
     {

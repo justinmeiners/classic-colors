@@ -249,8 +249,6 @@ CcBitmap* cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed
     return b;
 }
 
-
-
 // - Don't modify the string, just give ranges (we only take away).
 // - Every character should be printed, except:
 //      1. new lines
@@ -261,7 +259,6 @@ typedef struct {
     int end;
     int width;
 } LineRange;
-
 
 int text_wordwrap(
         LineRange* lines,
@@ -378,12 +375,10 @@ int text_wordwrap(
 #undef I
 }
 
-
-
-static int test_advance_(const wchar_t* text, int i, void* ctx) {
+static
+int test_advance_(const wchar_t* text, int i, void* ctx) {
     return 1;
 }
-
 
 void test_text_wordwrap(void)
 {
@@ -411,7 +406,8 @@ void test_text_wordwrap(void)
     }
 }
 
-static void render_(
+static
+void render_(
         const stbtt_fontinfo* font_info,
         int line_height,
         CcTextAlign alignment,
@@ -516,7 +512,8 @@ typedef struct
     float scale;
 } WordWrapData;
 
-static int kern_advance_(const wchar_t* text, int i, void* ctx)
+static
+int kern_advance_(const wchar_t* text, int i, void* ctx)
 {
     const WordWrapData* a = ctx;
     const stbtt_fontinfo* font_info = a->font_info;
