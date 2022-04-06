@@ -916,7 +916,7 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
 
 void paint_tool_cancel(PaintContext* ctx)
 {
-    printf("CANCEL\n");
+    if (DEBUG_LOG) printf("CANCEL\n");
 }
 
 int paint_w(const PaintContext* ctx)
