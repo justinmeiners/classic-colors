@@ -14,26 +14,28 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LAYER_H
-#define LAYER_H
+#ifndef CC_LAYER_H
+#define CC_LAYER_H
 
+#include <wctype.h>
 #include "bitmap.h"
+#include "transform.h"
+
 #include "config.h"
 #include "stb_truetype.h" 
-#include <wctype.h>
 
 typedef enum
 {
     TEXT_ALIGN_CENTER,
     TEXT_ALIGN_LEFT,
     TEXT_ALIGN_RIGHT
-} TextAlign;
+} CcTextAlign;
 
 
 typedef struct
 {
-    Bitmap* bitmaps;
-    ColorBlend blend;
+    CcBitmap* bitmaps;
+    CcColorBlend blend;
 
     int x;
     int y;
@@ -42,61 +44,61 @@ typedef struct
     stbtt_fontinfo font_info;
 
     int font_size;
-    TextAlign font_align;
+    CcTextAlign font_align;
     uint32_t font_color;
 
     size_t text_buffer_size;
     wchar_t* text;
-} Layer;
+} CcLayer;
 
-static inline BitmapRect layer_rect(const Layer* layer)
+static inline
+CcRect cc_layer_rect(const CcLayer* layer)
 {
-    BitmapRect r = {
+    CcRect r = {
         layer->x, layer->y, layer->bitmaps->w, layer->bitmaps->h
     };
     return r;
 }
 
-static inline int layer_w(const Layer* layer)
+static inline
+int cc_layer_w(const CcLayer* layer)
 {
     if (!layer->bitmaps) return 0;
     return layer->bitmaps->w;
 }
 
-static inline int layer_h(const Layer* layer)
+static inline
+int cc_layer_h(const CcLayer* layer)
 {
     if (!layer->bitmaps) return 0;
     return layer->bitmaps->h;
 }
 
-void layer_init(Layer* layer, int x, int y);
-void layer_shutdown(Layer* layer);
-void layer_reset(Layer* layer);
-void layer_flip(Layer* layer, int horiz);
-void layer_set_bitmap(Layer* layer, Bitmap* new_bitmap);
-void layer_rotate_90(Layer* layer, int repeat);
-void layer_rotate_angle(Layer* layer, double angle, uint32_t bg_color);
-void layer_stretch(Layer* layer, int w, int h, int w_angle, int h_angle, uint32_t bg_color);
-void layer_resize(Layer* layer, int new_w, int new_h, uint32_t bg_color);
-void layer_ensure_size(Layer* layer, int w, int h);
+void cc_layer_init(CcLayer* layer, int x, int y);
+void cc_layer_shutdown(CcLayer* layer);
+void cc_layer_reset(CcLayer* layer);
+void cc_layer_flip(CcLayer* layer, int horiz);
+void cc_layer_set_bitmap(CcLayer* layer, CcBitmap* new_bitmap);
+void cc_layer_rotate_90(CcLayer* layer, int repeat);
+void cc_layer_rotate_angle(CcLayer* layer, double angle, uint32_t bg_color);
+void cc_layer_stretch(CcLayer* layer, int w, int h, int w_angle, int h_angle, uint32_t bg_color);
+void cc_layer_resize(CcLayer* layer, int new_w, int new_h, uint32_t bg_color);
+void cc_layer_ensure_size(CcLayer* layer, int w, int h);
 
-void layer_set_text(Layer* layer, const wchar_t* text);
+void cc_layer_set_text(CcLayer* layer, const wchar_t* text);
+void cc_layer_render(CcLayer* layer);
 
-void layer_render(Layer* layer);
-
-unsigned char* bitmap_compress(const Bitmap* b, size_t* out_size);
-Bitmap* bitmap_decompress(unsigned char* compressed_data, size_t compressed_size);
-
+unsigned char* cc_bitmap_compress(const CcBitmap* b, size_t* out_size);
+CcBitmap* cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed_size);
 
 void test_text_wordwrap(void);
 
-
-void text_render(
-        Bitmap* bitmap,
+void cc_text_render(
+        CcBitmap* bitmap,
         const wchar_t* text,
         const stbtt_fontinfo* font_info,
         int font_size,
-        TextAlign align,
+        CcTextAlign align,
         uint32_t font_color
     );
 
@@ -115,10 +117,10 @@ typedef struct
 
     int zoom;
 
-} Viewport;
+} CcViewport;
 
 static inline
-void viewport_init(Viewport* v)
+void cc_viewport_init(CcViewport* v)
 {
     v->paint_x = 0;
     v->paint_y = 0;
@@ -130,16 +132,16 @@ void viewport_init(Viewport* v)
 }
 
 static inline
-void viewport_coord_to_paint(const Viewport* v, int x, int y, int* out_x, int* out_y)
+void cc_viewport_coord_to_paint(const CcViewport* v, int x, int y, int* out_x, int* out_y)
 {
     *out_x = (x / v->zoom) + v->paint_x;
     *out_y = (y / v->zoom) + v->paint_y;
 }
 
 static inline
-Viewport viewport_zoom_centered(const Viewport* v, int new_zoom)
+CcViewport cc_viewport_zoom_centered(const CcViewport* v, int new_zoom)
 {
-    Viewport out;
+    CcViewport out;
     out.w = v->w;
     out.h = v->h;
     out.zoom = new_zoom;
@@ -152,8 +154,6 @@ Viewport viewport_zoom_centered(const Viewport* v, int new_zoom)
 
     return out;
 }
-
-
 
 #endif
 

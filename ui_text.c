@@ -29,8 +29,8 @@ static void update_text_(Widget widget, XtPointer client_data, XtPointer call_da
 
     const wchar_t* text = XmTextGetStringWcs(widget);
 
-    Layer* overlay = ctx->layers + LAYER_OVERLAY;
-    layer_set_text(overlay, text);
+    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
+    cc_layer_set_text(overlay, text);
 
     ui_refresh_drawing(0);
 }
@@ -42,9 +42,9 @@ static void update_font_size_(Widget widget, XtPointer client_data, XtPointer ca
 
     XmSpinBoxCallbackStruct* cbs = (XmSpinBoxCallbackStruct*)call_data;
 
-    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
     overlay->font_size = cbs->position;
-    layer_render(overlay);
+    cc_layer_render(overlay);
 
     ui_refresh_drawing(0);
 }
@@ -56,9 +56,9 @@ static void update_font_(Widget widget,  XtPointer client_data, XtPointer call_d
 
     XmComboBoxCallbackStruct* cbs = (XmComboBoxCallbackStruct *)call_data;
 
-    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
     paint_set_font(ctx, overlay, cbs->item_position);
-    layer_render(overlay);
+    cc_layer_render(overlay);
     ui_refresh_drawing(0);
 }
 
@@ -84,9 +84,9 @@ static void update_font_alignment_(Widget widget,  XtPointer client_data, XtPoin
             break;
     }
 
-    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
     overlay->font_align = align;
-    layer_render(overlay);
+    cc_layer_render(overlay);
     ui_refresh_drawing(0);
 }
 
@@ -98,7 +98,7 @@ static void font_destroy_(Widget widget,  XtPointer client_data, XtPointer call_
 static Widget setup_text_dialog_(Widget parent)
 {
     PaintContext* ctx = &g_paint_ctx;
-    Layer* overlay = ctx->layers + LAYER_OVERLAY;
+    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
 
 
     int n = 0;

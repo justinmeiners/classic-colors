@@ -16,12 +16,12 @@ static UndoPatch* find_last_full_(UndoPatch* it, UndoPatch* last)
     return last_full;
 }
 
-static Bitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
+static CcBitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
 {
     assert(first_full != last && first_full->full_image);
 
     // make a copy of the full image:
-    Bitmap* new_canvas = bitmap_decompress(first_full->data, first_full->data_size); 
+    CcBitmap* new_canvas = cc_bitmap_decompress(first_full->data, first_full->data_size); 
     if (DEBUG_LOG) printf("replaying at checkpint: %d %d\n", new_canvas->w, new_canvas->h);
 
     UndoPatch* it = first_full->next;
@@ -30,7 +30,7 @@ static Bitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
     while (it != last)
     {
         // fix up the last undo
-        Bitmap* to_blit = bitmap_decompress(it->data, it->data_size); 
+        CcBitmap* to_blit = cc_bitmap_decompress(it->data, it->data_size); 
         assert(to_blit->w == it->rect.w && to_blit->h == it->rect.h);
 
         if (DEBUG_LOG)
@@ -41,7 +41,7 @@ static Bitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
                   );
         }
 
-        bitmap_blit_unsafe(
+        cc_bitmap_blit_unsafe(
                 to_blit,
                 new_canvas,
                 0, 0,
@@ -49,7 +49,7 @@ static Bitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
                 it->rect.w, it->rect.h,
                 COLOR_BLEND_REPLACE
                 );
-        bitmap_destroy(to_blit);
+        cc_bitmap_destroy(to_blit);
         it = it->next;
     }
 
@@ -72,7 +72,7 @@ static void destroy_(UndoPatch* start, UndoPatch* end)
 
 // Interactive operations (strokes, lines, etc) are short and thus fast.
 // Full image operations (resize, stroke, etc) can expect some delay .
-UndoPatch* undo_patch_create(const Bitmap* src, BitmapRect r)
+UndoPatch* undo_patch_create(const CcBitmap* src, CcRect r)
 {
     // save the modified rectangle in a patch
     UndoPatch* patch = malloc(sizeof(UndoPatch));
@@ -80,20 +80,20 @@ UndoPatch* undo_patch_create(const Bitmap* src, BitmapRect r)
     patch->next = NULL;
     patch->data_size = 0;
 
-    if (bitmap_rect_equal(r, bitmap_rect(src)))
+    if (cc_rect_equal(r, cc_bitmap_rect(src)))
     {
         // full image (replay checkpoint)
         patch->full_image = 1;
-        patch->data = bitmap_compress(src, &patch->data_size);
+        patch->data = cc_bitmap_compress(src, &patch->data_size);
     }
     else
     {
         patch->full_image = 0;
 
-        Bitmap* b = bitmap_create(r.w, r.h);
-        bitmap_blit_unsafe(src, b, r.x, r.y, 0, 0, r.w, r.h, COLOR_BLEND_REPLACE);
-        patch->data = bitmap_compress(b, &patch->data_size);
-        bitmap_destroy(b);
+        CcBitmap* b = cc_bitmap_create(r.w, r.h);
+        cc_bitmap_blit_unsafe(src, b, r.x, r.y, 0, 0, r.w, r.h, COLOR_BLEND_REPLACE);
+        patch->data = cc_bitmap_compress(b, &patch->data_size);
+        cc_bitmap_destroy(b);
     }
     return patch;
 }
@@ -105,14 +105,14 @@ void undo_patch_destroy(UndoPatch* patch)
 }
 
 
-void undo_queue_init(UndoQueue* q)
+void cc_undo_queue_init(CcUndoQueue* q)
 {
     q->last_undo = NULL;
     q->first_undo = NULL;
     q->undo_count = 0;
 }
 
-void undo_queue_clear(UndoQueue* q)
+void cc_undo_queue_clear(CcUndoQueue* q)
 {
     UndoPatch* it = q->first_undo;
 
@@ -127,7 +127,7 @@ void undo_queue_clear(UndoQueue* q)
     q->first_undo = NULL;
 }
 
-void undo_queue_trim(UndoQueue* q, int max_undos)
+void cc_undo_queue_trim(CcUndoQueue* q, int max_undos)
 {
     assert(max_undos > 0);
 
@@ -156,8 +156,8 @@ void undo_queue_trim(UndoQueue* q, int max_undos)
     // first is always full
     assert(last_full);
 
-    Bitmap* new_canvas = undo_replay_(last_full, end);
-    UndoPatch* new_patch = undo_patch_create(new_canvas, bitmap_rect(new_canvas));
+    CcBitmap* new_canvas = undo_replay_(last_full, end);
+    UndoPatch* new_patch = undo_patch_create(new_canvas, cc_bitmap_rect(new_canvas));
     assert(new_patch->full_image);
     new_patch->next = end;
 
@@ -167,7 +167,7 @@ void undo_queue_trim(UndoQueue* q, int max_undos)
     q->undo_count = n + 1;
 }
 
-void undo_queue_push(UndoQueue* q, UndoPatch* patch)
+void cc_undo_queue_push(CcUndoQueue* q, UndoPatch* patch)
 {
     // place on end of stack 
     if (q->last_undo)
@@ -190,19 +190,19 @@ void undo_queue_push(UndoQueue* q, UndoPatch* patch)
     }
 }
 
-int undo_queue_can_undo(UndoQueue* q)
+int cc_undo_queue_can_undo(CcUndoQueue* q)
 {
     return q->first_undo && (q->first_undo != q->last_undo);
 }
 
-int undo_queue_can_redo(UndoQueue* q)
+int cc_undo_queue_can_redo(CcUndoQueue* q)
 {
     return q->last_undo && q->last_undo->next;
 }
 
-void undo_queue_undo(UndoQueue* q, Layer* target)
+void cc_undo_queue_undo(CcUndoQueue* q, CcLayer* target)
 {
-    if (!undo_queue_can_undo(q))
+    if (!cc_undo_queue_can_undo(q))
     {
         return;
     }
@@ -210,8 +210,8 @@ void undo_queue_undo(UndoQueue* q, Layer* target)
     assert(last_full);
     assert(last_full->next);
 
-    Bitmap* new_canvas = undo_replay_(last_full, q->last_undo);
-    layer_set_bitmap(target, new_canvas);
+    CcBitmap* new_canvas = undo_replay_(last_full, q->last_undo);
+    cc_layer_set_bitmap(target, new_canvas);
 
     // one more thing.. we need to move "last_undo" back one
     UndoPatch* it = last_full;
@@ -223,22 +223,22 @@ void undo_queue_undo(UndoQueue* q, Layer* target)
     if (DEBUG_LOG) printf("undo_count %d\n", q->undo_count);
 }
 
-void undo_queue_redo(UndoQueue* q, Layer* target)
+void cc_undo_queue_redo(CcUndoQueue* q, CcLayer* target)
 {
-    if (!undo_queue_can_redo(q))
+    if (!cc_undo_queue_can_redo(q))
     {
         return;
     }
 
     UndoPatch* it = q->last_undo->next;
-    Bitmap* to_blit = bitmap_decompress(it->data, it->data_size);
+    CcBitmap* to_blit = cc_bitmap_decompress(it->data, it->data_size);
     if (it->full_image)
     {
-        layer_set_bitmap(target, to_blit);
+        cc_layer_set_bitmap(target, to_blit);
     }
     else
     {
-        bitmap_blit_unsafe(
+        cc_bitmap_blit_unsafe(
                 to_blit,
                 target->bitmaps,
                 0, 0,
@@ -246,7 +246,7 @@ void undo_queue_redo(UndoQueue* q, Layer* target)
                 it->rect.w, it->rect.h,
                 COLOR_BLEND_REPLACE
                 );
-        bitmap_destroy(to_blit);
+        cc_bitmap_destroy(to_blit);
     }
 
     q->last_undo = it;

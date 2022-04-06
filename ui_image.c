@@ -329,7 +329,7 @@ static Widget setup_attributes_dialog_(Widget parent)
     Widget rowcol_v = XtVaCreateWidget("row_v", xmRowColumnWidgetClass, box, NULL);
 
     {
-        const Layer* l = g_paint_ctx.layers + g_paint_ctx.active_layer;
+        const CcLayer* l = g_paint_ctx.layers + g_paint_ctx.active_layer;
 
         char scratch_buffer[SCRATCH_MAX];
         Widget size_row = XtVaCreateWidget("x_row", xmRowColumnWidgetClass, rowcol_v, XmNorientation, XmHORIZONTAL, NULL);
