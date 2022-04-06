@@ -1116,18 +1116,19 @@ void paint_select_polygon(PaintContext* ctx)
     /* apply mask to selection */
     cc_bitmap_blit(mask, b, 0, 0, 0, 0, rect.w, rect.h, COLOR_BLEND_MULTIPLY);
 
+    /* apply mask to image to clear where the selection was */
+    cc_bitmap_replace(mask, COLOR_WHITE, bg_color_(ctx));
+    cc_bitmap_blit(mask, l->bitmaps, 0, 0, rect.x, rect.y, rect.w, rect.h, COLOR_BLEND_OVERLAY);
+    cc_bitmap_destroy(mask);
+
     CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
     overlay->x = rect.x;
     overlay->y = rect.y;
     overlay->blend = COLOR_BLEND_OVERLAY;
     cc_layer_set_bitmap(overlay, b);
 
+    paint_undo_save(ctx, overlay->x, overlay->y, cc_layer_w(overlay), cc_layer_h(overlay));
     ctx->active_layer = LAYER_OVERLAY;
-
-    cc_bitmap_replace(mask, COLOR_WHITE, bg_color_(ctx));
-    cc_bitmap_blit(mask, l->bitmaps, 0, 0, rect.x, rect.y, rect.w, rect.h, COLOR_BLEND_OVERLAY);
-
-    cc_bitmap_destroy(mask);
 }
 
 void paint_select_clear(PaintContext* ctx)
