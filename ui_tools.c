@@ -37,7 +37,7 @@
 #include "icons/icon_airbrush.xpm"
 #include "icons/icon_text.xpm"
 #include "icons/icon_polygon.xpm"
-#include "icons/icon_polygon_select2.xpm"
+#include "icons/icon_lasso.xpm"
 
 typedef enum
 {
@@ -330,7 +330,7 @@ ToolInfo g_tools[] = {
         TOOL_SELECT_POLYGON,
         OPTION_SELECT_MODE,
         "Lasso select",
-        icon_polygon_select2,
+        icon_lasso,
         "Click and drag to outline a selection area. The selection can be moved with click and drag."
     },
 };

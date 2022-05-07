@@ -12,7 +12,7 @@
 			By: <a href= "http://justinmeiners.github.io/"> Justin Meiners </a>
 			<br><br>
 
-		<table border="1" bgcolor="LightSeaGreen"> 
+		<table border="1" bgcolor="LightSeaGreen" width="600">
 			<tbody>
 				<td bgcolor="lightgrey">
 					<font color="black">
@@ -23,16 +23,16 @@
                         <hr>
 					<h3> Description </h3>
 						<p>
-							Classic-Colors is a simple raster image editor writen in the motif toolkit, It supports the file formats of:
+							Classic-Colors is a simple raster image editor written in the motif toolkit, It supports the file formats of:
 							<ul>
 							<li> .jpg </li>
 							<li> .png </li>
 							<li> .gif </li>
 							<li> .tga </li>
-							<li> .gif </li>
+							<li> .bmp </li>
 							
 							</ul>
-							The main interface as shown:<br>
+							The main interface as shown-<br>
 							<img src="mainWindow.png" alt="Main window" width="974"	height="">
 							<br><br>
 							Of the visible widgets, they will be discussed top to down, starting with the menubar:<br>
@@ -80,10 +80,10 @@
 
 								<li> <h5><u>H</u>elp</h5>  
 								<ul>
-									<!-- <li><h5>Help</h5>
+									<li><h5>manual</h5>
 									Bring up the HTML help page for Classic-Colors
-									</li> -->
-									<li><h5>About</h5>
+									</li>
+									<li><h5>about</h5>
 									Bring up the about Classic-Colors window.
 									</li>
 								</ul> 
@@ -91,62 +91,51 @@
 								</li>
 							</ul>
 							<br>
-						 The 12 buttons below are:<br>
+						 The 12 buttons below are-<br>
 						 <img src="tools.png" alt="Tools">
-						 <br> in order of left to right:
+						 <br> in order of left to right downwards (color options are done with the primary(left mouse button by default) and the secondary(right mouse button by default) mouse buttons):
 							<ul>
 								<li> <h5>Brush</h5> 
 									Draws a circlular brush without interuption, options are sizes mesured in pixels
 								</li>
-								<li> <h5>Select(dashed square)</h5> 
-									Select area, options are:
-									<ul>
-										<li>
-											<h5>ignore bg</h5>
-											ignore background
-										</li>
-										<li>
-											<h5>everything</h5>
-											grab everything
-										</li>
-									</ul>
-								</li>
-								<li> <h5>Pencil</h5> 
-									Draws a square brush without interuption, same mouse options as brush
-								</li>
-								<li> <h5>Zoom(maginfying glass)</h5> 
-									Use a zoom operation on the image
-								</li>
-
+                                <li> <h5>Zoom(maginfying glass)</h5>
+                                    Use a zoom operation on the image
+                                </li>
+                                <li> <h5>Pencil</h5>
+                                    Draws a square brush without interuption, same mouse options as brush
+                                </li>
+                                <li> <h5>Text(A)</h5>
+                                    Draw text, options are
+                                    <ul>
+                                        <li>Text type</li>
+                                        <li>Text size</li>
+                                        <li>Text allighment</li>
+                                    </ul>
+                                </li>
 								<li> <h5>Erase(eraser)</h5> 
 									Inverse of brush
 								</li>
-								<li> <h5>Text(A)</h5> 
-									Draw text, options are
-									<ul>
-										<li>Text type</li>
-										<li>Text size</li>
-										<li>Text allighment</li>
-									</ul>
-								</li>
+                                <li> <h5>Line</h5>
+                                    Draw a line, options are size
+                                </li>
 								<li> <h5>Sample(dropper)</h5> 
 									Samples the color of the selected area
 								</li>
-								<li> <h5>Line</h5> 
-									Draw a line, options are size
-								</li>
-
+                                <li> <h5>Square draw</h5>
+                                    Draw a square <!--with the left mouse button, drawing with the right mouse button gives a inverted selection --> of color, options are:
+                                    <ul>
+                                        <li>Stroke</li>
+                                        <li>Fill</li>
+                                        <li>Stroke + Fill</li>
+                                    </ul>
+                                </li>
 								<li> <h5>Spray</h5> 
-									Deposit visual noise constrained in a circle, options are size
+									Deposit visual noise constrained in a circle, same options as brush <--are size!-->
 								</li>
-								<li> <h5>Square draw</h5> 
-									Draw a square, options are:
-									<ul>
-										<li>Stroke</li>
-										<li>Fill</li>
-										<li>Stroke + Fill</li>
-									</ul>
-								</li>
+                                <li> <h5>Oval draw</h5>
+                                    Draw a oval, options are same as square draw
+                                </li>
+								
 								<li> <h5>Fill(bucket)</h5> 
 									Fill selected area, options are:
 									<ul>
@@ -154,9 +143,26 @@
 										<li>Everywhere</li>
 									</ul>
 								</li>
-								<li> <h5>Oval draw</h5> 
-									Draw a oval, options are same as square draw
-								</li>
+                                <li> <h5> Polygon Draw </h5>
+                                    click anywhere to make a point for the shape, unselect to complete the shape.
+                                </li>
+                                <li> <h5>Select(dashed square)</h5>
+                                    Select area, the area  options are:
+                                    <ul>
+                                        <li>
+                                            <h5>ignore bg</h5>
+                                            ignore background
+                                        </li>
+                                        <li>
+                                            <h5>everything</h5>
+                                            grab everything
+                                        </li>
+                                    </ul>
+                                </li>
+                                
+                                <li> <h5> Lasso select </h5>
+                                    Click and hold down the left-mouse, to make a selection, release to complete it. Same options as the original select.
+                                </li>
 							</ul>
 							<br>
 							below that is a context sensitive list of options relating to the selected tool above:<br>
@@ -164,7 +170,7 @@
 							<br>
 							<img src="Colors.png" alt="Color and status" width="684"><br>
                                 Below the above is the color selection, there are two large squares and 42 smaller squares; the leftmost large square is the color for the left mouse button, the square to the right to it is the color that will be ignored for background operations, it is trigered by the right mouse button <br>
-                            <br>Farthest below is the status message
+                            <br>Farthest below is the status message-
                             
                             <hr>
 
@@ -197,7 +203,8 @@
 			</tbody>
 		</table>
 		Help page writen by <a href="https://github.com/MagnetarRocket">MagnetarRocket</a>
-        ©Justin Meiners 2021
+©Justin Meiners 2021
+<!-- there's a weird "Â" before copyright, don't know why yet -->
 		</center>
 	</body>
 </html>
