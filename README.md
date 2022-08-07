@@ -28,6 +28,10 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 	sudo apt install libmotif-dev libxpm-dev
 
+**openIndiana/Tribblix**:
+
+	`todo`
+
 **macOS (homebrew)**:
 
 Install [XQuartz][xquartz] either from the link, or homebrew cask:
