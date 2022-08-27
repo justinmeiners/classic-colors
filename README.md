@@ -30,7 +30,10 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 **openIndiana/Tribblix**:
 
-	`todo`
+Tribblix already includes classic-colors, however if one is compiling from source, or is on
+OpenIndiana, then here are the steps needed:
+	
+	todo
 
 **macOS (homebrew)**:
 
