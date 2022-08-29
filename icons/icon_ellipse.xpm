@@ -1,9 +1,9 @@
 /* XPM */
 static char *icon_ellipse[] = {
 /* columns rows colors chars-per-pixel */
-"24 24 2 1 ",
+"24 24 2 1",
 "  c black",
-". c white",
+". c gray100",
 /* pixels */
 ".........      .........",
 "......            ......",

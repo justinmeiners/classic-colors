@@ -1,11 +1,11 @@
 /* XPM */
 static char *icon_polygon[] = {
 /* columns rows colors chars-per-pixel */
-"24 24 4 1 ",
+"24 24 4 1",
 "  c black",
 ". c #484848",
 "X c #DDDDDD",
-"o c white",
+"o c gray100",
 /* pixels */
 "oooooooooooooooooooooooo",
 "ooo    ..Xoooooooooooooo",

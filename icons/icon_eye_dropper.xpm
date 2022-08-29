@@ -1,14 +1,14 @@
 /* XPM */
 static char *icon_eye_dropper[] = {
 /* columns rows colors chars-per-pixel */
-"24 24 7 1 ",
+"24 24 7 1",
 "  c black",
 ". c #444444",
 "X c DimGray",
 "o c #627D99",
 "O c #BBBBBB",
 "+ c #CDCDCD",
-"@ c white",
+"@ c gray100",
 /* pixels */
 "@@@@@@@@@@X. @@@@@@@@@@@",
 "@@@@@@@@@@X. @@@@@@@@@@@",
