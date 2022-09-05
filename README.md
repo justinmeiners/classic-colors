@@ -33,7 +33,7 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 Tribblix already includes classic-colors, however if one is compiling from source, or is on
 OpenIndiana, then here are the steps needed:
 	
-	todo
+	Work is underway for openIndiana, classic-colors is included as a package for tribblix, see tribblix instructions on how to install packages.
 
 **macOS (homebrew)**:
 
