@@ -28,6 +28,13 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 	sudo apt install libmotif-dev libxpm-dev
 
+**openIndiana/Tribblix**:
+
+Tribblix already includes classic-colors, however if one is compiling from source, or is on
+OpenIndiana, then here are the steps needed:
+	
+	Work is underway for openIndiana, classic-colors is included as a package for tribblix, see tribblix instructions on how to install packages.
+
 **macOS (homebrew)**:
 
 Install [XQuartz][xquartz] either from the link, or homebrew cask:
