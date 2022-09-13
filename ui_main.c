@@ -71,22 +71,25 @@ static void cb_open_website_()
     about_dialog = NULL;
 }
 
+static char* about_string_ =
+"Classic Colors v1.0.0\n\
+\n\
+Created by Justin Meiners (https://www.jmeiners.com) in 2021. \n\
+Classic Colors is free software available under the GPL 2 license.\n\
+\n\
+To provide feedback or file a bug please visit the project website:\n\
+https://github.com/justinmeiners/classic-colors\n\
+\n\
+Additional thanks:\n\
+Sean Barrett (http://nothings.org) for stb libs \n\
+MagnetarRocket (https://github.com/MagnetarRocket)\n";
+
 static Widget setup_about_dialog_(Widget parent)
 {
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
-    
-    XmString about_string = XmStringCreateLtoR(
-"About Classic Colors\n\
-\n\
-Created by Justin Meiners (justin.meiners@gmail.com) in 2021. \n\
-Classic Colors is free software available under the GPL license.\n\
-\n\
-To give feedback or file a bug please visit the project website:\n\
-https://github.com/justinmeiners/classic-colors\n\
-\n\
-Thanks to Sean Barrett for stb libs: http://nothings.org", XmSTRING_DEFAULT_CHARSET);
+    XmString about_string = XmStringCreateLtoR(about_string_, XmSTRING_DEFAULT_CHARSET);
 
     XmString title = XmStringCreateLocalized("About");
     XmString website = XmStringCreateLocalized("Website");
@@ -94,7 +97,7 @@ Thanks to Sean Barrett for stb libs: http://nothings.org", XmSTRING_DEFAULT_CHAR
 
     n = 0;
     XtSetArg(args[n], XmNdeleteResponse, XmDESTROY); ++n;
-    Widget dialog =  XmCreateDialogShell(parent, "about", args, n);
+    Widget dialog =  XmCreateDialogShell(parent, "About", args, n);
     XmStringFree(title);
 
     n = 0;
