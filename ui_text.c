@@ -114,6 +114,11 @@ static Widget setup_text_window_(Widget parent)
     XtSetArg(args[n], XmNwidthInc, 16); ++n;
     XtSetArg(args[n], XmNheightInc, 16); ++n;
 
+    int sx, sy;
+
+    XtVaGetValues(parent, XmNx, &sx, XmNy, &sy, NULL);
+    XtSetArg(args[n], XmNx, sx); ++n;
+    XtSetArg(args[n], XmNy, sy); ++n;
 
     Widget dialog = XtCreatePopupShell("Classic Colors - text options", topLevelShellWidgetClass, parent, args, n);
     Widget pane = XtVaCreateWidget("pane", xmPanedWindowWidgetClass, dialog,
@@ -242,6 +247,8 @@ Widget ui_start_editing_text(void)
     XtVaSetValues(text, XmNeditable, 1, NULL);
 
     XtManageChild(g_window);
+
+    XMapRaised(XtDisplay(g_window), XtWindow(g_window));
     return g_window;
 }
 
