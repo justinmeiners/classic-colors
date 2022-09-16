@@ -44,7 +44,7 @@ const char* paint_font_name(int index)
     return font_table[index].name;
 }
 
-int paint_font_count()
+int paint_font_count(void)
 {
     return sizeof(font_table) / sizeof(FontEntry);
 }
@@ -904,7 +904,6 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
             }
             break;
         case TOOL_SELECT_RECTANGLE:
-
             if (ctx->active_layer == LAYER_MAIN)
             {
                 CcRect rect = cc_rect_around_corners(x, y, ctx->line_x, ctx->line_y);
@@ -1170,3 +1169,9 @@ void paint_set_font(PaintContext* ctx, CcLayer* layer, int font)
     }
     cc_layer_render(layer);
 }
+
+int paint_is_editing_text(PaintContext* ctx)
+{
+    return ctx->tool == TOOL_TEXT && ctx->active_layer == LAYER_OVERLAY;
+}
+

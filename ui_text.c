@@ -19,8 +19,9 @@
 #include <Xm/SSpinB.h>
 #include <Xm/PanedW.h>
 #include <Xm/TextF.h>
+#include <X11/Shell.h>
 
-Widget g_dialog = NULL;
+Widget g_window = NULL;
 
 static void update_text_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
@@ -92,14 +93,17 @@ static void update_font_alignment_(Widget widget,  XtPointer client_data, XtPoin
 
 static void font_destroy_(Widget widget,  XtPointer client_data, XtPointer call_data)
 {
-    g_dialog = NULL;
+    g_window = NULL;
 }
 
-static Widget setup_text_dialog_(Widget parent)
+static Widget setup_text_window_(Widget parent)
 {
     PaintContext* ctx = &g_paint_ctx;
     CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
 
+    // The text/font window is a top-level window, not a dialog.
+    // Dialog's are primarily transient, but this window is not.
+    // See chapter 7 of the Motif book.
 
     int n = 0;
     Arg args[UI_ARGS_MAX];
@@ -110,7 +114,8 @@ static Widget setup_text_dialog_(Widget parent)
     XtSetArg(args[n], XmNwidthInc, 16); ++n;
     XtSetArg(args[n], XmNheightInc, 16); ++n;
 
-    Widget dialog = XmCreateDialogShell(parent, "Text", args, n);
+
+    Widget dialog = XtCreatePopupShell("Classic Color - Text options", topLevelShellWidgetClass, parent, args, n);
     Widget pane = XtVaCreateWidget("pane", xmPanedWindowWidgetClass, dialog,
             XmNseparatorOn, 1,
             // from motif book
@@ -124,6 +129,7 @@ static Widget setup_text_dialog_(Widget parent)
             xmRowColumnWidgetClass,
             pane,
             XmNorientation, XmHORIZONTAL,
+            XmNpaneMaximum, 50,
             NULL);
 
 
@@ -221,29 +227,30 @@ static Widget setup_text_dialog_(Widget parent)
 }
 
 
-Widget ui_setup_text_dialog(void)
+Widget ui_start_editing_text(void)
 {
     PaintContext* ctx = &g_paint_ctx;
 
-    if (!g_dialog)
+    if (!g_window)
     {
-        g_dialog = setup_text_dialog_(g_main_w);
+        g_window = setup_text_window_(g_main_w);
     }
-    Widget text = XtNameToWidget(g_dialog, "*text_area");
+    Widget text = XtNameToWidget(g_window, "*text_area");
     wchar_t* current_text = ctx->layers[LAYER_OVERLAY].text;
     XmTextSetStringWcs(text, current_text == NULL ? L"" : current_text);
 
-    XtManageChild(g_dialog);
-    return g_dialog;
+    XtVaSetValues(text, XmNeditable, 1, NULL);
+
+    XtManageChild(g_window);
+    return g_window;
 }
 
 
-void ui_hide_text_dialog(void)
+void ui_disable_editing_text(void)
 {
-    if (g_dialog)
-    {
-        XtDestroyWidget(g_dialog);
-    }
+    if (!g_window) return;
 
+    Widget text = XtNameToWidget(g_window, "*text_area");
+    XtVaSetValues(text, XmNeditable, 0, NULL);
 }
 
