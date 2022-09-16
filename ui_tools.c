@@ -371,7 +371,7 @@ static void update_tool_options_(Widget option_list, ToolOption option_set)
 
 static void change_tool_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
-    // todo: double calll
+    // todo: double call
     PaintContext* ctx = &g_paint_ctx;
     size_t selection = (size_t)client_data;
     XmToggleButtonCallbackStruct* cbs = (XmToggleButtonCallbackStruct*)call_data;
@@ -382,7 +382,9 @@ static void change_tool_(Widget widget, XtPointer client_data, XtPointer call_da
 
     paint_set_tool(ctx, tool->tool);
 
-    if (tool->tool != TOOL_TEXT) ui_hide_text_dialog();
+    if (!paint_is_editing_text(&g_paint_ctx)) {
+        ui_disable_editing_text();
+    }
 
     Widget options_list = XtNameToWidget(g_main_w, "*tool_options");
     update_tool_options_(options_list, tool->option_set);
@@ -430,9 +432,8 @@ void ui_refresh_tool(void)
 {
     PaintTool tool = g_paint_ctx.tool;
 
-    if (tool != TOOL_TEXT)
-    {
-        ui_hide_text_dialog();
+    if (!paint_is_editing_text(&g_paint_ctx)) {
+        ui_disable_editing_text();
     }
 
     char name[UI_NAME_MAX];

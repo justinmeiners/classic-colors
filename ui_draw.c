@@ -225,10 +225,8 @@ void ui_cb_draw_input_(Widget scrollbar, XtPointer client_data, XtPointer call_d
                 shouldRefresh = 1;
 
                 if (should_update_scroll) update_scroll_();
+                if (paint_is_editing_text(ctx)) ui_start_editing_text();
 
-                if (ctx->tool == TOOL_TEXT &&
-                        ctx->active_layer == LAYER_OVERLAY)
-                    ui_setup_text_dialog();
                 break;
             }
             case MotionNotify:

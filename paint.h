@@ -230,8 +230,11 @@ void paint_select_clear(PaintContext* ctx);
 void paint_set_color(PaintContext* ctx, uint32_t color, int fg);
 void paint_set_font(PaintContext* ctx, CcLayer* layer, int font);
 
+int paint_is_editing_text(PaintContext* ctx);
+
 const char* paint_font_name(int index);
-int paint_font_count();
+int paint_font_count(void);
+
 
 
 #endif
