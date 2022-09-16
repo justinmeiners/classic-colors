@@ -115,7 +115,7 @@ static Widget setup_text_window_(Widget parent)
     XtSetArg(args[n], XmNheightInc, 16); ++n;
 
 
-    Widget dialog = XtCreatePopupShell("Classic Color - Text options", topLevelShellWidgetClass, parent, args, n);
+    Widget dialog = XtCreatePopupShell("Classic Colors - text options", topLevelShellWidgetClass, parent, args, n);
     Widget pane = XtVaCreateWidget("pane", xmPanedWindowWidgetClass, dialog,
             XmNseparatorOn, 1,
             // from motif book
