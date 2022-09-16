@@ -87,6 +87,15 @@ SHM can be disabled at configuration time:
 Unfortunatly, macOS does not allow very much SYSV shared memory to be used,
 and so it is likely if you resize the window very large it will exceed this limit and switch to the fallback codepath.
 For the best experience on macOS you will need to increase this limit.
+Create a file `/etc/sysctl.conf` containing the following:
+
+    kern.sysv.shmmax=134217728
+    kern.sysv.shmmin=1
+    kern.sysv.shmmni=1024
+    kern.sysv.shmseg=256
+    kern.sysv.shmall=32768
+
+Restart the system after making this change.
 
 [shm]: https://www.x.org/releases/X11R7.7/doc/xextproto/shm.html
 
