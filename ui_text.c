@@ -102,7 +102,7 @@ static Widget setup_text_window_(Widget parent)
     CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
 
     // The text/font window is a top-level window, not a dialog.
-    // Dialog's are primarily transient, but this window is not.
+    // Dialogs are primarily transient, but this window is not.
     // See chapter 7 of the Motif book.
 
     int n = 0;
