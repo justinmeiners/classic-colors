@@ -221,8 +221,9 @@ static Widget setup_text_window_(Widget parent)
         text = XmCreateText(pane, "text_area", args, XtNumber(args));
         XtManageChild(text);
         XtAddCallback(text, XmNvalueChangedCallback, update_text_, 0);
-
     }
+
+    XtVaSetValues(pane, XmNinitialFocus, text, NULL);
 
     XtManageChild(pane);
     XtAddCallback(dialog, XmNdestroyCallback, font_destroy_, NULL);
