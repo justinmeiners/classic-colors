@@ -71,7 +71,7 @@ then
 	echo "CFLAGS += -D DEBUG_LOG=1 -g" >> config.mk
 else
     #-fno-strict-aliasing is specifically a requirement of stb_image_write
-	echo "CFLAGS += -D DEBUG_LOG=0 -O3 -ffast-math -fno-strict-aliasing" >> config.mk
+	echo "CFLAGS += -D DEBUG_LOG=0 -O3 -fno-strict-aliasing" >> config.mk
 fi
 
 if [ "$SHM" = "true" ]
