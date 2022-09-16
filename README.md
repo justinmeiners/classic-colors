@@ -28,13 +28,6 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 	sudo apt install libmotif-dev libxpm-dev
 
-**openIndiana/Tribblix**:
-
-Tribblix already includes classic-colors, however if one is compiling from source, or is on
-OpenIndiana, then here are the steps needed:
-	
-	Work is underway for openIndiana, classic-colors is included as a package for tribblix, see tribblix instructions on how to install packages.
-
 **macOS (homebrew)**:
 
 Install [XQuartz][xquartz] either from the link, or homebrew cask:
@@ -49,6 +42,8 @@ Now install motif:
 
 	brew install openmotif libxpm
 
+[xquartz]: https://www.xquartz.org/
+
 **NetBSD (pkgsrc)**
 
 	pkgin install motif gmake pkg-config
@@ -57,8 +52,12 @@ Now install motif:
 
 	pkg_add motif gmake
 
-[xquartz]: https://www.xquartz.org/
+**openIndiana/Tribblix**:
 
+Classic colors is available as a package for [Tribblix](http://www.tribblix.org/zap.html):
+
+    zap install-overlay classic-colors
+    
 ## Install
 
 Now you are ready to build:
@@ -88,6 +87,15 @@ SHM can be disabled at configuration time:
 Unfortunatly, macOS does not allow very much SYSV shared memory to be used,
 and so it is likely if you resize the window very large it will exceed this limit and switch to the fallback codepath.
 For the best experience on macOS you will need to increase this limit.
+Create a file `/etc/sysctl.conf` containing the following:
+
+    kern.sysv.shmmax=134217728
+    kern.sysv.shmmin=1
+    kern.sysv.shmmni=1024
+    kern.sysv.shmseg=256
+    kern.sysv.shmall=32768
+
+Restart the system after making this change.
 
 [shm]: https://www.x.org/releases/X11R7.7/doc/xextproto/shm.html
 

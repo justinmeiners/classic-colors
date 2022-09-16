@@ -62,8 +62,8 @@ Widget ui_setup_command_area(Widget parent);
 void ui_refresh_drawing(int clear);
 void ui_drawing_cleanup(void);
 
-Widget ui_setup_text_dialog(void);
-void ui_hide_text_dialog(void);
+Widget ui_start_editing_text(void);
+void ui_disable_editing_text(void);
 
 void ui_set_color(Widget window, uint32_t color, int fg);
 Widget ui_setup_scroll_area(Widget parent);
