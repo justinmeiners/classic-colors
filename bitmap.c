@@ -184,14 +184,14 @@ void cc_bitmap_blit_unsafe(
     {
         case COLOR_BLEND_REPLACE:
         {
-            const uint32_t *restrict in = src->data;
-            uint32_t *restrict out = dst->data;
+            const uint32_t *restrict in = src->data + src_x + src_y * src->w;
+            uint32_t *restrict out = dst->data + dst_x + dst_y * dst->w;
             
             for (int y = 0; y < h; ++y)
             {
-                int dst_index = dst_x + (dst_y + y) * dst->w;
-                int src_index = src_x + (src_y + y) * src->w;
-                memcpy(out + dst_index, in + src_index, w * sizeof(uint32_t));
+                memcpy(out, in, w * sizeof(uint32_t));
+                in += src->w;
+                out += dst->w;
             }
             break;
         }
