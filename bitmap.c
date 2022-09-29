@@ -193,79 +193,93 @@ void cc_bitmap_blit_unsafe(
 #undef LOOP
 }
 
-#define BITMAP_DRAW_LINE(func) {\
-    int m, x, y, sx, ex, sy, ey, index; \
-    if (x1 == x2 && y1 == y2) \
-    { \
-        x = x1; y = y1; \
-        func; return; \
-    } \
-    if (abs(x2 - x1) > abs(y2 - y1)) \
-    { \
-        if (x1 > x2) \
-        { \
-            sx = x2; ex = x1; \
-            sy = y2; ey = y1; \
-        } \
-        else \
-        { \
-            sx = x1; ex = x2; \
-            sy = y1; ey = y2; \
-        } \
-        int delta_x = ex - sx; \
-        int delta_y = ey - sy; \
-        int dy = delta_y > 0 ? 1 : -1; \
-        delta_y *= dy; \
-        int D = 2 * delta_y - delta_x; \
-        y = sy; \
-        for (x = sx; x <= ex; ++x) \
-        { \
-            func; \
-            if (D > 0) \
-            { \
-                y += dy; \
-                D = D + 2 * (delta_y - delta_x); \
-            } \
-            else \
-            { \
-                D += 2 * delta_y; \
-            } \
-        }  \
-    } \
-    else \
-    { \
-        if (y1 > y2) \
-        { \
-            sx = x2; ex = x1; \
-            sy = y2; ey = y1; \
-        } \
-        else \
-        { \
-            sx = x1; ex = x2; \
-            sy = y1; ey = y2; \
-        } \
-        int delta_x = ex - sx; \
-        int delta_y = ey - sy; \
-        int dx = delta_x > 0 ? 1 : -1; \
-        delta_x *= dx; \
-        int D = 2 * delta_x - delta_y; \
-        x = sx; \
-        for (y = sy; y <= ey; ++y) \
-        { \
-            func; \
-            if (D > 0) \
-            { \
-                x += dx; \
-                D = D + 2 * (delta_x - delta_y); \
-            } \
-            else \
-            { \
-                D += 2 * delta_x; \
-            } \
-        }  \
-    } \
-} \
- 
+static inline
+void interp_linear_(
+        CcBitmap* b,
+        int x1,
+        int y1,
+        int x2,
+        int y2,
+        int width,
+        uint32_t color,
+        void (*draw_part)(CcBitmap* b, int x, int y, int w, uint32_t c, void* ctx),
+        void* ctx
+        ) {
+    int m, x, y, sx, ex, sy, ey, index;
+    if (x1 == x2 && y1 == y2)
+    {
+        x = x1; y = y1;
+        draw_part(b, x, y, width, color, ctx);
+        return;
+    }
+    if (abs(x2 - x1) > abs(y2 - y1))
+    {
+        if (x1 > x2)
+        {
+            sx = x2; ex = x1;
+            sy = y2; ey = y1;
+        }
+        else
+        {
+            sx = x1; ex = x2;
+            sy = y1; ey = y2;
+        }
+        int delta_x = ex - sx;
+        int delta_y = ey - sy;
+        int dy = delta_y > 0 ? 1 : -1;
+        delta_y *= dy;
+        int D = 2 * delta_y - delta_x;
+        y = sy;
+        for (x = sx; x <= ex; ++x)
+        {
+            draw_part(b, x, y, width, color, ctx);
+            if (D > 0)
+            {
+                y += dy;
+                D = D + 2 * (delta_y - delta_x);
+            }
+            else
+            {
+                D += 2 * delta_y;
+            }
+        } 
+    }
+    else
+    {
+        if (y1 > y2)
+        {
+            sx = x2; ex = x1;
+            sy = y2; ey = y1;
+        }
+        else
+        {
+            sx = x1; ex = x2;
+            sy = y1; ey = y2;
+        }
+        int delta_x = ex - sx;
+        int delta_y = ey - sy;
+
+        int dx = delta_x > 0 ? 1 : -1;
+        delta_x *= dx;
+
+        int D = 2 * delta_x - delta_y;
+        x = sx;
+
+        for (y = sy; y <= ey; ++y)
+        {
+            draw_part(b, x, y, width, color, ctx);
+            if (D > 0)
+            {
+                x += dx;
+                D = D + 2 * (delta_x - delta_y);
+            }
+            else
+            {
+                D += 2 * delta_x;
+            }
+        }
+    }
+}
 
 void cc_bitmap_draw_spray(CcBitmap* b, int cx, int cy, int r, int density, uint32_t color)
 {
@@ -323,39 +337,49 @@ void cc_bitmap_draw_square(CcBitmap* b, int cx, int cy, int d, uint32_t color)
         }
     }
 }
+
+static inline
+void interp_square_helper_(CcBitmap* b, int x, int y, int d, uint32_t c, void* ctx) {
+    cc_bitmap_draw_square(b, x, y, d, c);
+}
    
 void cc_bitmap_interp_square(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
 {
-    BITMAP_DRAW_LINE(cc_bitmap_draw_square(b, x, y, width, color));
+    interp_linear_(b, x1, y1, x2, y2, width, color, interp_square_helper_, NULL);
 }
 
+
+static inline
+void interp_circle_helper_(CcBitmap* b, int x, int y, int w, uint32_t c, void* ctx) {
+    cc_bitmap_draw_circle(b, x, y, w, c);
+}
+ 
 void cc_bitmap_interp_circle(CcBitmap* b, int x1, int y1, int x2, int y2, int radius, uint32_t color)
 {
-    BITMAP_DRAW_LINE(cc_bitmap_draw_circle(b, x, y, radius, color));
+    interp_linear_(b, x1, y1, x2, y2, radius, color, interp_circle_helper_, NULL);
+}
+
+static inline
+void interp_dotted_horiz_(CcBitmap* b, int x, int y, int r, uint32_t color, void* ctx) {
+    if (x % 8 < 4) cc_bitmap_set(b, x, y, color);
+}
+
+static inline
+void interp_dotted_vert_(CcBitmap* b, int x, int y, int r, uint32_t color, void* ctx) {
+    if (y % 8 < 4) cc_bitmap_set(b, x, y, color);
 }
 
 void cc_bitmap_interp_dotted(CcBitmap* b, int x1, int y1, int x2, int y2, uint32_t color)
 {
     if (abs(x2 - x1) > abs(y2 - y1))
     {
-        BITMAP_DRAW_LINE(
-                if (x % 8 < 4)
-                {
-                    cc_bitmap_set(b, x, y, color);
-                }
-        );
+        interp_linear_(b, x1, y1, x2, y2, 0, color, interp_dotted_horiz_, NULL);
     }
     else
     {
-        BITMAP_DRAW_LINE(
-                if (y % 8 < 4)
-                {
-                    cc_bitmap_set(b, x, y, color);
-                }
-        );
+        interp_linear_(b, x1, y1, x2, y2, 0, color, interp_dotted_vert_, NULL);
     }
 }
-
 
 void cc_bitmap_dotted_rect(CcBitmap* b, int x1, int y1, int x2, int y2, uint32_t color)
 {
