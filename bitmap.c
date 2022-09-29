@@ -705,7 +705,8 @@ void cc_bitmap_zoom_general(const CcBitmap* src, CcBitmap* dst, int zoom)
         {
             int src_x = x / zoom;
             int src_y = y / zoom;
-            out[x + y * dst->w] = in[src_x + src_y * src->w];
+            *out = in[src_x + src_y * src->w];
+            ++out;
         }
     }
 }
@@ -721,7 +722,8 @@ void cc_bitmap_zoom_power_of_2(const CcBitmap* src, CcBitmap* dst, int zoom_powe
         {
             int src_x = x >> zoom_power;
             int src_y = y >> zoom_power;
-            out[x + y * dst->w] = in[src_x + src_y * src->w];
+            *out = in[src_x + src_y * src->w];
+            ++out;
         }
     }
 }
