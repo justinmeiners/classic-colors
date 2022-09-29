@@ -110,6 +110,14 @@ void cc_bitmap_blit(
 
     if (!cc_rect_intersect(dst_rect, cc_bitmap_rect(dst), &dst_rect)) return;
 
+    if (src == dst) {
+        CcRect src_rect = {
+            src_x, src_y, w, h
+        };
+        CcRect temp;
+        assert(!cc_rect_intersect(src_rect, dst_rect, &temp));
+    }
+
     cc_bitmap_blit_unsafe(
             src,
             dst, 
@@ -123,10 +131,43 @@ void cc_bitmap_blit(
         );
 }
 
-
-void cc_bitmap_blit_unsafe(
+static inline
+void blit_patch_(
         const CcBitmap* src,
         CcBitmap* dst,
+        int src_x,
+        int src_y,
+        int dst_x,
+        int dst_y,
+        int w,
+        int h,
+        void (*blend)(const int*, const int*, int*)
+        ) {
+    int src_comps[4];
+    int dst_comps[4];
+    int out_comps[4];
+
+    const uint32_t *restrict in = src->data;
+    uint32_t *restrict out = dst->data;
+
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            int src_index = (src_x + x) + (src_y + y) * src->w;
+            int dst_index = (dst_x + x) + (dst_y + y) * dst->w;
+
+            cc_color_unpack(in[src_index], src_comps);
+            cc_color_unpack(out[dst_index], dst_comps);
+            blend(src_comps, dst_comps, out_comps);
+            out[dst_index] = cc_color_pack(out_comps);
+        }
+    }
+}
+
+void cc_bitmap_blit_unsafe(
+        const CcBitmap *src,
+        CcBitmap *dst,
         int src_x,
         int src_y,
         int dst_x,
@@ -139,58 +180,34 @@ void cc_bitmap_blit_unsafe(
     assert(src_x + w <= src->w);
     assert(src_y + h <= src->h);
 
-    int src_comps[4];
-    int dst_comps[4];
-
-#define LOOP(code_) \
-    for (int y = 0; y < h; ++y) \
-    { \
-        for (int x = 0; x < w; ++x) \
-        { \
-            int src_index = (src_x + x) + (src_y + y) * src->w; \
-            int dst_index = (dst_x + x) + (dst_y + y) * dst->w; \
-            cc_color_unpack(src->data[src_index], src_comps); \
-            cc_color_unpack(dst->data[dst_index], dst_comps); \
-            code_ \
-        } \
-    }
-
     switch (blend)
     {
         case COLOR_BLEND_REPLACE:
+        {
+            const uint32_t *restrict in = src->data + src_x + src_y * src->w;
+            uint32_t *restrict out = dst->data + dst_x + dst_y * dst->w;
+            
             for (int y = 0; y < h; ++y)
             {
-                int dst_index = dst_x + (dst_y + y) * dst->w;
-                int src_index = src_x + (src_y + y) * src->w;
-                memcpy(dst->data + dst_index, src->data + src_index, w * sizeof(uint32_t));
+                memcpy(out, in, w * sizeof(uint32_t));
+                in += src->w;
+                out += dst->w;
             }
             break;
+        }
         case COLOR_BLEND_OVERLAY:
-            LOOP( 
-               cc_color_blend_overlay(src_comps, dst_comps);
-               dst->data[dst_index] = cc_color_pack(dst_comps);
-            )
+            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_overlay);
             break;
         case COLOR_BLEND_FULL:
-            LOOP( 
-               cc_color_blend_full(src_comps, dst_comps);
-               dst->data[dst_index] = cc_color_pack(dst_comps);
-            )
+            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_full);
             break;
         case COLOR_BLEND_INVERT:
-            LOOP(
-                cc_color_blend_invert(src_comps, dst_comps);
-                dst->data[dst_index] = cc_color_pack(dst_comps);
-            ) 
+            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_invert);
             break;
         case COLOR_BLEND_MULTIPLY:
-            LOOP(
-                cc_color_blend_multiply(src_comps, dst_comps);
-                dst->data[dst_index] = cc_color_pack(dst_comps);
-            ) 
+            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_multiply);
             break;
     }
-#undef LOOP
 }
 
 static inline
@@ -657,6 +674,7 @@ void cc_bitmap_zoom(const CcBitmap* src, CcBitmap* dst, int zoom)
     // we have enough src material
     assert(dst->w <= src->w * zoom);
     assert(dst->h <= src->h * zoom);
+    assert(src != dst);
 
     int x = 1;
     int i;
@@ -678,26 +696,34 @@ void cc_bitmap_zoom(const CcBitmap* src, CcBitmap* dst, int zoom)
 
 void cc_bitmap_zoom_general(const CcBitmap* src, CcBitmap* dst, int zoom)
 {
+    const uint32_t *restrict in = src->data;
+    uint32_t *restrict out = dst->data;
+
     for (int y = 0; y < dst->h; ++y)
     {
         for (int x = 0; x < dst->w; ++x)
         {
             int src_x = x / zoom;
             int src_y = y / zoom;
-            dst->data[x + y * dst->w] = src->data[src_x + src_y * src->w];
+            *out = in[src_x + src_y * src->w];
+            ++out;
         }
     }
 }
 
 void cc_bitmap_zoom_power_of_2(const CcBitmap* src, CcBitmap* dst, int zoom_power)
 {
+    const uint32_t *restrict in = src->data;
+    uint32_t *restrict out = dst->data;
+
     for (int y = 0; y < dst->h; ++y)
     {
         for (int x = 0; x < dst->w; ++x)
         {
             int src_x = x >> zoom_power;
             int src_y = y >> zoom_power;
-            dst->data[x + y * dst->w] = src->data[src_x + src_y * src->w];
+            *out = in[src_x + src_y * src->w];
+            ++out;
         }
     }
 }
