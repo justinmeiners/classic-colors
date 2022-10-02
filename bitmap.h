@@ -70,6 +70,8 @@ void cc_bitmap_copy_mask(CcBitmap* b, const unsigned char* mask_buffer, uint32_t
 
 void cc_bitmap_replace(CcBitmap* b, uint32_t old_color, uint32_t new_color);
 
+// requires:
+//      the src and destination rects should not overlap in memory.
 void cc_bitmap_blit(
         const CcBitmap* src,
         CcBitmap* dst,
@@ -83,9 +85,10 @@ void cc_bitmap_blit(
         );
 
 // requires: src rect is in bounds
+//      the src and destination rects should not overlap in memory.
 void cc_bitmap_blit_unsafe(
-        const CcBitmap* src,
-        CcBitmap* dst,
+        const CcBitmap *src,
+        CcBitmap *dst,
         int src_x,
         int src_y,
         int dst_x,
@@ -117,6 +120,8 @@ void cc_bitmap_rotate_90(const CcBitmap* src, CcBitmap* dst);
 void cc_bitmap_flip_horiz(const CcBitmap* src, CcBitmap* dst);
 void cc_bitmap_flip_vert(const CcBitmap* src, CcBitmap* dst);
 
+// requires: 
+//  src and dst are not the same bitmap
 void cc_bitmap_zoom(const CcBitmap* src, CcBitmap* dst, int zoom);
 void cc_bitmap_zoom_general(const CcBitmap* src, CcBitmap* dst, int zoom);
 void cc_bitmap_zoom_power_of_2(const CcBitmap* src, CcBitmap* dst, int zoom_power);

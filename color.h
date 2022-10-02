@@ -51,7 +51,7 @@ int cc_color_component(uint32_t c, int i)
 }
 
 static inline
-uint32_t cc_color_pack(int comps[])
+uint32_t cc_color_pack(const int comps[])
 {
     uint32_t color = 0;
     for (int i = 0; i < 4; ++i)
@@ -69,27 +69,30 @@ void cc_color_unpack(uint32_t c, int comps[])
 // https://en.wikipedia.org/wiki/Alpha_compositing
 
 static inline
-void cc_color_blend_full(int* src_comps, int* dst_comps)
-{
+void cc_color_blend_full(
+    const int *restrict src,
+    const int *restrict dst,
+    int *restrict out
+) {
     // I would really like a nice integer math one, but couldn't figure out a good way.
     // This is currently only used for text, so shouldn't be a problem.
-    float a1 = (float)src_comps[3] / 255.0;
-    float a2 = (float)dst_comps[3] / 255.0;
+    float a1 = (float)src[3] / 255.0;
+    float a2 = (float)dst[3] / 255.0;
 
     float alpha = a1 + a2 - a1 * a2;
     if (alpha > 0.0)
     {
         for (int i = 0; i < 3; ++i)
         {
-            float c1 = src_comps[i] / 255.0;
-            float c2 = dst_comps[i] / 255.0;
+            float c1 = src[i] / 255.0;
+            float c2 = dst[i] / 255.0;
             
             float num = a1 * c1 + a2 * c2 * (1.0 - a1);
             float x = num / alpha;
-            dst_comps[i] = round(x * 255.0);
+            out[i] = round(x * 255.0);
         }
     }
-    dst_comps[3] = round(alpha * 255.0);
+    out[3] = round(alpha * 255.0);
 }
 
 
@@ -100,34 +103,45 @@ void cc_color_blend_full(int* src_comps, int* dst_comps)
 //      =  c_1 a_1 + c_2 - c_2 a_1
 //      = c_2 + a_1(c_1 - c_2)
 static inline
-void cc_color_blend_overlay(int* src_comps, int* dst_comps)
-{
+void cc_color_blend_overlay(
+    const int *restrict src,
+    const int *restrict dst,
+    int *restrict out
+) {
     // a * src + (1 -a) * dst
     for (int i = 0; i < 3; ++i)
     {
-        dst_comps[i] += ((src_comps[i] - dst_comps[i]) * src_comps[3]) >> 8;
+        out[i] = dst[i] + (((src[i] - dst[i]) * src[3]) >> 8);
     }
-    dst_comps[3] = 0xFF;
+    out[3] = 0xFF;
 }
 
 static inline
-void cc_color_blend_invert(int* src_comps, int* dst_comps)
+void cc_color_blend_invert(
+    const int *restrict src,
+    const int *restrict dst,
+    int *restrict out)
 {
+    int inverted[3];
+    int alpha = src[3];
     // invert colors
-    for (int i = 0; i < 3; ++i) src_comps[i] = 255 - dst_comps[i];
+    for (int i = 0; i < 3; ++i) inverted[i] = 255 - dst[i];
     for (int i = 0; i < 3; ++i)
     {
-        dst_comps[i] = ((src_comps[3] + 1) * src_comps[i] + (256 - src_comps[3]) * dst_comps[i]) >> 8;
+        out[i] = ((alpha + 1) * inverted[i] + (256 - alpha) * dst[i]) >> 8;
     }
-    dst_comps[3] = 0xFF;
+    out[3] = 0xFF;
 }
 
 static inline
-void cc_color_blend_multiply(int* src_comps, int* dst_comps)
-{
+void cc_color_blend_multiply(
+    const int *restrict src,
+    const int *restrict dst,
+    int *restrict out
+) {
     // a * src + (1 -a) * dst
     for (int i = 0; i < 4; ++i)
-        dst_comps[i] = ((src_comps[i] + 1) * dst_comps[i]) >> 8;
+        out[i] = ((src[i] + 1) * dst[i]) >> 8;
 }
 
 void color_blending_test();
