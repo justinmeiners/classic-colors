@@ -83,6 +83,8 @@ CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A,
         dst = cc_bitmap_create(w, h);
     }
 
+    uint32_t *restrict out = dst->data;
+
     // A: R^n -> R^m
     // Iterate each pixel in the destination
     // and find it's preimage under A to know its previous color.
@@ -107,7 +109,8 @@ CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A,
             int src_y = (int)floor(pre_image.y);
 
             //printf("image: %f, %f pre: %f, %f\n", image.x, image.y, pre_image.x, pre_image.y);
-            dst->data[x + y * dst->w] = cc_bitmap_get(src, src_x, src_y, bg_color);
+            *out = cc_bitmap_get(src, src_x, src_y, bg_color);
+            ++out;
         }
     }
     return dst;
