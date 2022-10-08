@@ -575,8 +575,9 @@ void paint_tool_down(PaintContext* ctx, int x, int y, int button)
             {
                 prepare_empty_overlay_(ctx);
             }
-
         }
+        default:
+            break;
     }
 
     ctx->tool_x = ctx->tool_min_x = ctx->tool_max_x = x;
@@ -732,7 +733,8 @@ void paint_tool_move(PaintContext* ctx, int x, int y)
             }
             break;
         }
- 
+        default:
+            break;
     }
     ctx->tool_x = x;
     ctx->tool_y = y;
@@ -749,6 +751,8 @@ void paint_tool_update(PaintContext* ctx)
     {
         case TOOL_SPRAY_CAN:
             cc_bitmap_draw_spray(b, ctx->tool_x, ctx->tool_y, ctx->brush_width, SPRAY_DENSITY, fg_color_(ctx));
+            break;
+        default:
             break;
     }
 }
@@ -909,6 +913,8 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
                 CcRect rect = cc_rect_around_corners(x, y, ctx->line_x, ctx->line_y);
                 paint_select(ctx, rect.x, rect.y, rect.w, rect.h);
             }
+            break;
+        default:
             break;
     }
 }
