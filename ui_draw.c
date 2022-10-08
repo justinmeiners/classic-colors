@@ -36,21 +36,25 @@
 typedef struct
 {
     int use_shm;
-    XImage* x_image;
+
     Visual* x_visual;
     GC x_gc;
     XVisualInfo x_visual_info;
     XColor select_bright;
     XColor select_dark;
 
+    XImage* x_images[2];
+    int x_index;
+
 #ifdef FEATURE_SHM
     // "it will have a lifetime at least as long as that of the ... XImage"
     XShmSegmentInfo shminfo;
+    XImage* shm_image;
 #endif
 } DrawInfo;
 
 
-DrawInfo g_buffer;
+DrawInfo g_draw_info;
 Widget draw_area = NULL;
 Widget scroll_w = NULL;
 XtIntervalId g_down_timer = 0;
@@ -58,9 +62,6 @@ XtIntervalId g_down_timer = 0;
 static
 void copy_bitmap_to_ximage_(XImage* dest, const CcBitmap* src, const XVisualInfo* info)
 {
-    int comps[4];
-    int i;
-
     // as we find more pixel formats we will need to add additional cases here
     if (info->red_mask == 0x00FF0000
             && info->green_mask == 0x0000FF00
@@ -271,7 +272,7 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
 {
     int visual_count;
     XVisualInfo template;
-    template.visualid = XVisualIDFromVisual(g_buffer.x_visual);
+    template.visualid = XVisualIDFromVisual(g_draw_info.x_visual);
 
     // http://www.mirbsd.org/htman/i386/man3/XGetVisualInfo.htm
     XVisualInfo* info_list = XGetVisualInfo (display, VisualIDMask, &template, &visual_count);
@@ -304,7 +305,7 @@ int verify_visual_(Display* display, const Visual* visual, XVisualInfo* out_info
 
 Widget ui_setup_draw_area(Widget parent)
 {
-    DrawInfo* buffer = &g_buffer;
+    DrawInfo* buffer = &g_draw_info;
     memset(buffer, 0, sizeof(DrawInfo));
 
     int n = 0;
@@ -344,23 +345,26 @@ Widget ui_setup_draw_area(Widget parent)
  
     // We don't need to pick a visual. It is provided by motif.
     // Just verify it's sane.
-    g_buffer.x_visual = DefaultVisual(display, 0);
+    g_draw_info.x_visual = DefaultVisual(display, 0);
 
-    if (!verify_visual_(display, g_buffer.x_visual, &g_buffer.x_visual_info))
+    if (!verify_visual_(display, g_draw_info.x_visual, &g_draw_info.x_visual_info))
     {
         exit(1);
     }
 
-    buffer->x_image = NULL;
-
 #ifdef FEATURE_SHM
+    buffer->shm_image = NULL;
     buffer->use_shm = XShmQueryExtension(display) == True;
 #else
     buffer->use_shm = 0;
 #endif
+
     if (DEBUG_LOG)
     {
-        printf("X11 color mask. red: %08lx. green: %08lx. blue: %08lx\n", g_buffer.x_visual_info.red_mask, g_buffer.x_visual_info.green_mask, g_buffer.x_visual_info.blue_mask);
+        printf(
+                "X11 color mask. red: %08lx. green: %08lx. blue: %08lx\n",
+                g_draw_info.x_visual_info.red_mask, g_draw_info.x_visual_info.green_mask, g_draw_info.x_visual_info.blue_mask
+              );
     }
 
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
@@ -394,19 +398,51 @@ void scrolled_(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 }
 
 static
-void shm_shutdown_(DrawInfo* ctx, Display* dpy)
+void shm_destroy_image_(DrawInfo* ctx, Display* dpy)
 {
 #ifdef FEATURE_SHM
-    if (ctx->x_image)
+    if (ctx->shm_image)
     {
         XShmDetach(dpy, &ctx->shminfo);
-        XDestroyImage(ctx->x_image);
+        XDestroyImage(ctx->shm_image);
         shmdt(ctx->shminfo.shmaddr);
         shmctl(ctx->shminfo.shmid, IPC_RMID, 0);
-        ctx->x_image = NULL;
+        ctx->shm_image = NULL;
     }
 #endif
 }
+
+static
+void double_buffer_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
+{
+    int w = composite->bitmaps->w;
+    int h = composite->bitmaps->h;
+
+    int needs_to_resize = !ctx->x_images[0]
+        || (ctx->x_images[0]->width != w)
+        || (ctx->x_images[0]->height != h);
+
+    if (!needs_to_resize || w <= 0 || h <= 0) return;
+
+    for (int i = 0; i < 2; ++i) {
+        if (ctx->x_images[i]) XDestroyImage(ctx->x_images[i]);
+
+        size_t size = w * h * 4;
+        char* data = malloc(size);
+        // What is bitmap_pad? 
+        // the documentation isn't clear, but I found:
+        // "This is a very roundabout way of describing the pixel size in bits."
+        // https://handmade.network/wiki/2834-tutorial_a_tour_through_xlib_and_related_technologies
+        ctx->x_images[i] = XCreateImage(dpy, ctx->x_visual, 24, ZPixmap, 0, data, w, h, 32, 0);
+
+        if (!ctx->x_images[i])
+        {
+            fprintf(stderr, "failed to create display buffer");
+            exit(1);
+        }
+    }
+}
+ 
 
 static
 int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
@@ -418,31 +454,31 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
     int w = composite->bitmaps->w;
     int h = composite->bitmaps->h;
 
-    int needs_to_resize = !ctx->x_image
-        || (ctx->x_image->width != w)
-        || (ctx->x_image->height != h);
+    int needs_to_resize = !ctx->shm_image
+        || (ctx->shm_image->width != w)
+        || (ctx->shm_image->height != h);
 
     if (!needs_to_resize || w <= 0 || h <= 0)
     {
         return 1;
     }
-    shm_shutdown_(ctx, dpy);
+    shm_destroy_image_(ctx, dpy);
 
     // https://www.x.org/releases/X11R7.7/doc/xextproto/shm.html
     // data: "unless you have already allocated ... you should pass in NULL for the "data" pointer."
     //
     // "there are no "offset", "bitmap_pad", or "bytes_per_line" arguments.
     // These quantities will be defined by the server ... your code needs to abide by them."
-    XImage* x_image = XShmCreateImage(dpy, ctx->x_visual, 24, ZPixmap, NULL, &ctx->shminfo, w, h);
+    XImage* shm_image = XShmCreateImage(dpy, ctx->x_visual, 24, ZPixmap, NULL, &ctx->shminfo, w, h);
 
-    if (!x_image) goto cleanup;
-    if (x_image->xoffset != 0 || x_image->bitmap_pad != 32)
+    if (!shm_image) goto cleanup;
+    if (shm_image->xoffset != 0 || shm_image->bitmap_pad != 32)
     {
         fprintf(stderr, "xshm gave invalid offset or bitmap_pad. format is unusable.\n");
         goto cleanup;
     }
 
-	size_t size = x_image->bytes_per_line * x_image->height;
+	size_t size = shm_image->bytes_per_line * shm_image->height;
     ctx->shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777);
     if (ctx->shminfo.shmid == -1)
     {
@@ -464,8 +500,8 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
         goto cleanup;
     }
 
-    x_image->data = shmat(ctx->shminfo.shmid, 0, 0);
-    ctx->shminfo.shmaddr = x_image->data;
+    shm_image->data = shmat(ctx->shminfo.shmid, 0, 0);
+    ctx->shminfo.shmaddr = shm_image->data;
     ctx->shminfo.readOnly = 0;
 
     if (XShmAttach(dpy, &ctx->shminfo) == 0)
@@ -475,13 +511,13 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
     }
 
 
-    ctx->x_image = x_image;
+    ctx->shm_image = shm_image;
 
     return 1;
 
 cleanup:
-    if (x_image)
-        XDestroyImage(x_image);
+    if (shm_image)
+        XDestroyImage(shm_image);
 
     if (ctx->shminfo.shmid != -1)
     {
@@ -489,7 +525,7 @@ cleanup:
         shmctl(ctx->shminfo.shmid, IPC_RMID, 0);
     }
 
-    ctx->x_image = NULL;
+    ctx->shm_image = NULL;
     return 0;
 #endif
 
@@ -504,7 +540,7 @@ void ui_refresh_drawing(int clear)
     Window window = XtWindow(draw_area);
     Display* dpy = XtDisplay(draw_area);
 
-    DrawInfo* buffer = &g_buffer;
+    DrawInfo* buffer = &g_draw_info;
 
     if (clear)
     {
@@ -525,9 +561,9 @@ void ui_refresh_drawing(int clear)
 
         if (result)
         {
-            copy_bitmap_to_ximage_(buffer->x_image, composite->bitmaps, &buffer->x_visual_info);
 #ifdef FEATURE_SHM
-            XShmPutImage(dpy, window, buffer->x_gc, buffer->x_image, 0, 0, 0, 0, w, h, 0);
+            copy_bitmap_to_ximage_(buffer->shm_image, composite->bitmaps, &buffer->x_visual_info);
+            XShmPutImage(dpy, window, buffer->x_gc, buffer->shm_image, 0, 0, 0, 0, w, h, 0);
 #else
 			assert(0);
 #endif
@@ -538,27 +574,13 @@ void ui_refresh_drawing(int clear)
             buffer->use_shm = 0;
         }
     }
-
-    if (!buffer->use_shm)
-    {
-        size_t s = w * h * 4;
-        char* data = malloc(s);
-        // What is bitmap_pad? 
-        // the documentation isn't clear, but I found:
-        // "This is a very roundabout way of describing the pixel size in bits."
-        // https://handmade.network/wiki/2834-tutorial_a_tour_through_xlib_and_related_technologies
-        XImage* x_image = XCreateImage(dpy, buffer->x_visual, 24, ZPixmap, 0, data, w, h, 32, 0);
-
-        copy_bitmap_to_ximage_(x_image, composite->bitmaps, &buffer->x_visual_info);
-
-        if (!x_image)
-        {
-            fprintf(stderr, "failed to create display buffer");
-            exit(1);
-        }
-
-        XPutImage(dpy, window, buffer->x_gc, x_image, 0, 0, 0, 0, w, h);
-        XDestroyImage(x_image);
+  
+    // not an else case.
+    if (!buffer->use_shm) {
+        double_buffer_prepare_(buffer, dpy, composite);
+        copy_bitmap_to_ximage_(buffer->x_images[buffer->x_index], composite->bitmaps, &buffer->x_visual_info);
+        XPutImage(dpy, window, buffer->x_gc, buffer->x_images[buffer->x_index], 0, 0, 0, 0, w, h);
+        buffer->x_index = !buffer->x_index;
     }
 
     if (ctx->active_layer == LAYER_OVERLAY)
@@ -632,7 +654,11 @@ void ui_drawing_cleanup(void)
     if (draw_area)
     {
         Display* dpy = XtDisplay(draw_area);
-        DrawInfo* buffer = &g_buffer;
-        shm_shutdown_(buffer, dpy);
+        DrawInfo* ctx = &g_draw_info;
+        shm_destroy_image_(ctx, dpy);
+
+        for (int i = 0; i < 2; ++i) {
+            if (ctx->x_images[i]) XDestroyImage(ctx->x_images[i]);
+        }
     }
 }
