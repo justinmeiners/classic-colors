@@ -424,11 +424,12 @@ void double_buffer_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composit
 
     if (!needs_to_resize || w <= 0 || h <= 0) return;
 
+    if (DEBUG_LOG) fprintf(stderr, "resizing double buffer\n");
+
     for (int i = 0; i < 2; ++i) {
         if (ctx->x_images[i]) XDestroyImage(ctx->x_images[i]);
 
-        size_t size = w * h * 4;
-        char* data = malloc(size);
+        char* data = malloc(w * h * 4);
         // What is bitmap_pad? 
         // the documentation isn't clear, but I found:
         // "This is a very roundabout way of describing the pixel size in bits."
@@ -462,6 +463,8 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
     {
         return 1;
     }
+    if (DEBUG_LOG) fprintf(stderr, "resizing shm buffer\n");
+
     shm_destroy_image_(ctx, dpy);
 
     // https://www.x.org/releases/X11R7.7/doc/xextproto/shm.html
