@@ -72,7 +72,7 @@ static void cb_open_website_()
 }
 
 static char* about_string_ =
-"Classic Colors v1.0.0\n\
+"Classic Colors v1.0.1\n\
 \n\
 Created by Justin Meiners (https://www.jmeiners.com) in 2021. \n\
 Classic Colors is free software available under the GPL 2 license.\n\
