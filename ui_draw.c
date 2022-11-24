@@ -580,6 +580,10 @@ void ui_refresh_drawing(int clear)
   
     // not an else case.
     if (!buffer->use_shm) {
+        // The Ximages are created on resize, and then we manipulate the data buffer the image refers to.
+        // I believe this fits the protocol and only XPutImage triggers an upload to the XServer.
+        // However, it's possible to imagine an optimization where the server caches the image.
+        // Based on my reading of FreeDesktop this is not the case.
         double_buffer_prepare_(buffer, dpy, composite);
         copy_bitmap_to_ximage_(buffer->x_images[buffer->x_index], composite->bitmaps, &buffer->x_visual_info);
         XPutImage(dpy, window, buffer->x_gc, buffer->x_images[buffer->x_index], 0, 0, 0, 0, w, h);
