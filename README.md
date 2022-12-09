@@ -26,7 +26,7 @@ It has been tested on Debian (Ubuntu), OpenBSD, and macOS(Homebrew).
 
 **Debian/Ubuntu**:
 
-	sudo apt install libmotif-dev libxpm-dev
+	sudo apt install libmotif-dev libxpm-dev libxext-dev
 
 **macOS (homebrew)**:
 
