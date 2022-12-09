@@ -53,15 +53,33 @@ static int open_url_(const char* url)
     char command[OS_PATH_MAX];
     snprintf(command, OS_PATH_MAX, "xdg-open %s &", url);
 
-    if (system(command) != 0)
+    // Because we're running the command in the background, system(command) won't return the actual
+    // exit code of the program, and it might even return 0 even if xdg-open doesn't exist. Because
+    // of this, we need to check for its existence first to decide which command is best to run.
+
+    if (system("command -v xdg-open >/dev/null") == 0)
     {
-        if (DEBUG_LOG) fprintf(stderr, "xdg-open failed..");
-        if (system(command + 4) != 0) 
+        if (system(command) == 0)
         {
-            return 0;
+            return 1;
         }
+
+        if (DEBUG_LOG) fprintf(stderr, "xdg-open failed..");
     }
-    return 1;
+
+    if (system("command -v open >/dev/null") == 0)
+    {
+        // +4 cuts off the xdg- at the beginning of the command
+        if (system(command + 4) == 0)
+        {
+            return 1;
+        }
+
+        if (DEBUG_LOG) fprintf(stderr, "open failed..");
+    }
+
+    if (DEBUG_LOG) fprintf(stderr, "open_url_ failed..");
+    return 0;
 }
 
 static void cb_open_website_()
