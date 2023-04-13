@@ -51,10 +51,10 @@ extern Widget g_main_w;
 extern XtAppContext g_app;
 extern int g_ready;
 
-void ui_setup_file_menu(Widget menubar);
-void ui_setup_edit_menu(Widget menubar);
-void ui_setup_image_menu(Widget menubar);
-void ui_setup_view_menu(Widget menubar);
+void ui_setup_file_menu(Widget menuBar);
+void ui_setup_edit_menu(Widget menuBar);
+void ui_setup_image_menu(Widget menuBar);
+void ui_setup_view_menu(Widget menuBar);
 
 Widget ui_setup_tool_area(Widget parent);
 Widget ui_setup_command_area(Widget parent);
