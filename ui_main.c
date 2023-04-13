@@ -194,7 +194,7 @@ Widget ui_setup_menu(Widget parent)
     XmString image_str = XmStringCreateLocalized("Image");
     XmString help_str = XmStringCreateLocalized("Help");
 
-    Widget menubar = XmVaCreateSimpleMenuBar(parent, "menubar",
+    Widget menubar = XmVaCreateSimpleMenuBar(parent, "menuBar",
             XmVaCASCADEBUTTON, file_str, 'F',
             XmVaCASCADEBUTTON, edit_str, 'E',
             XmVaCASCADEBUTTON, view_str, 'V',
