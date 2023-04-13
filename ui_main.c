@@ -36,7 +36,7 @@ int g_ready = 0;
 
 
 Widget about_dialog = NULL;
-char* help_dir_path = "/usr/local/share/classic-colors/help/classic-colors_help-en.html";
+char* help_url = "https://github.com/justinmeiners/classic-colors";
 
 static void about_destroy_()
 {
@@ -85,7 +85,7 @@ static int open_url_(const char* url)
 
 static void cb_open_website_()
 {
-    open_url_("https://github.com/justinmeiners/classic-colors");
+    open_url_(help_url);//this needs to be changed around, for instance- what happens if the file is installed in "/opt"?
     XtDestroyWidget(about_dialog);
     about_dialog = NULL;
 }
