@@ -36,6 +36,7 @@ int g_ready = 0;
 
 
 Widget about_dialog = NULL;
+char* help_dir_path = "/usr/local/share/classic-colors/help/classic-colors_help-en.html";
 
 static void about_destroy_()
 {
@@ -147,7 +148,7 @@ static void cb_help_menu_(Widget widget, XtPointer a, XtPointer call_data)
     {
         case 0:
         {
-            open_url_("/usr/local/share/classic-colors/help/classic-colors_help-en.html");
+            open_url_("/usr/local/share/classic-colors/help/classic-colors_help-en.html");//need to fix this part, as it happens, it's rather glued to "/usr", not helpful if the file is very much elsewhere (eg. "/opt").
             break;
         }
         case 1:
@@ -194,7 +195,7 @@ Widget ui_setup_menu(Widget parent)
     XmString image_str = XmStringCreateLocalized("Image");
     XmString help_str = XmStringCreateLocalized("Help");
 
-    Widget menubar = XmVaCreateSimpleMenuBar(parent, "menubar",
+    Widget menuBar = XmVaCreateSimpleMenuBar(parent, "menuBar",
             XmVaCASCADEBUTTON, file_str, 'F',
             XmVaCASCADEBUTTON, edit_str, 'E',
             XmVaCASCADEBUTTON, view_str, 'V',
@@ -207,18 +208,18 @@ Widget ui_setup_menu(Widget parent)
     XmStringFree(edit_str);
     XmStringFree(file_str);
 
-    ui_setup_file_menu(menubar);
-    ui_setup_edit_menu(menubar);
-    ui_setup_image_menu(menubar);
-    ui_setup_view_menu(menubar);
+    ui_setup_file_menu(menuBar);
+    ui_setup_edit_menu(menuBar);
+    ui_setup_image_menu(menuBar);
+    ui_setup_view_menu(menuBar);
 
     XmString manual_str = XmStringCreateLocalized("Manual");
     XmString about_str = XmStringCreateLocalized("About");
 
-    Widget help_button = XmCreateCascadeButton(menubar, "Help", NULL, 0);
-    XtVaSetValues(menubar, XmNmenuHelpWidget, help_button, NULL);
+    Widget help_button = XmCreateCascadeButton(menuBar, "Help", NULL, 0);
+    XtVaSetValues(menuBar, XmNmenuHelpWidget, help_button, NULL);
 
-    Widget help_bar = XmVaCreateSimplePulldownMenu(menubar, "help_menu",
+    Widget help_bar = XmVaCreateSimplePulldownMenu(menuBar, "help_menu",
             -1, cb_help_menu_,
             XmVaPUSHBUTTON, manual_str, 'M', NULL, NULL,
             XmVaPUSHBUTTON, about_str, 'A', NULL, NULL,
@@ -230,9 +231,9 @@ Widget ui_setup_menu(Widget parent)
     XmStringFree(about_str);
 
     XtManageChild(help_button);
-    XtManageChild(menubar);
+    XtManageChild(menuBar);
 
-    return menubar;
+    return menuBar;
 }
 
 #if DEBUG_LOG
