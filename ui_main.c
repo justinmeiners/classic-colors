@@ -36,7 +36,7 @@ int g_ready = 0;
 
 
 Widget about_dialog = NULL;
-char* help_url = "https://github.com/justinmeiners/classic-colors";
+char* help_url = "/usr/local/share/classic-colors/help/classic-colors_help-en.html";
 
 static void about_destroy_()
 {
@@ -85,7 +85,7 @@ static int open_url_(const char* url)
 
 static void cb_open_website_()
 {
-    open_url_(help_url);//this needs to be changed around, for instance- what happens if the file is installed in "/opt"?
+    open_url_("https://github.com/justinmeiners/classic-colors");
     XtDestroyWidget(about_dialog);
     about_dialog = NULL;
 }
@@ -148,7 +148,7 @@ static void cb_help_menu_(Widget widget, XtPointer a, XtPointer call_data)
     {
         case 0:
         {
-            open_url_("/usr/local/share/classic-colors/help/classic-colors_help-en.html");//need to fix this part, as it happens, it's rather glued to "/usr", not helpful if the file is very much elsewhere (eg. "/opt").
+            open_url_(help_url);//this needs to be changed around, for instance- what happens if the file is installed in "/opt"?
             break;
         }
         case 1:
