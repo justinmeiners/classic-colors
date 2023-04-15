@@ -315,6 +315,7 @@ void fill_polygon_(
     // Scan line algorithm for arbitrary polygons.
     // Overview: https://web.cs.ucdavis.edu/~ma/ECS175_S00/Notes/0411_b.pdf
     // It's not the fastests thing in the world, but should be reuse.
+    assert(n >= 3);
 
     CcRect rect = cc_rect_around_points(points, n);
     if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
@@ -363,11 +364,15 @@ void cc_bitmap_fill_polygon_inplace(
     polygon_critical_values_x_(points, n, dirs);
     n = remove_axis_colinear_points_(points, dirs, n);
 
-    // must do y after x so the y critical values are valid for drawing.
-    polygon_critical_values_y_(points, n, dirs);
-    n = remove_axis_colinear_points_(points, dirs, n);
+    if (n >= 3) {
+      // must do y after x so the y critical values are valid for drawing.
+      polygon_critical_values_y_(points, n, dirs);
+      n = remove_axis_colinear_points_(points, dirs, n);
 
-    fill_polygon_(dst, points, dirs, n, color);
+      if (n >= 3) {
+        fill_polygon_(dst, points, dirs, n, color);
+      }
+    }
 
     free(dirs);
 }
