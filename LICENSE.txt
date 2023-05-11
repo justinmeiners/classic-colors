@@ -1,3 +1,9 @@
+Classic colors uses an modified X11 colors list directly taken 
+from X11 sources as an fallback source,
+
+
+
+Main program:
                     GNU GENERAL PUBLIC LICENSE
                        Version 2, June 1991
 
