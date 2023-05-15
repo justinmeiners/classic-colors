@@ -95,6 +95,8 @@ Create a file `/etc/sysctl.conf` containing the following:
     kern.sysv.shmseg=256
     kern.sysv.shmall=32768
 
+Please note that you will have to use "Sudo" when creating `sysctl.conf` as `/etc` is an system protected file.
+
 Restart the system after making this change.
 
 [shm]: https://www.x.org/releases/X11R7.7/doc/xextproto/shm.html
