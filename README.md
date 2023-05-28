@@ -114,7 +114,7 @@ Create a file `/etc/sysctl.conf` containing the following:
     kern.sysv.shmall=32768
 
 Please note that you will have to use "Sudo" when creating `sysctl.conf` as `/etc` is an system protected file. An easy way is to create the file with the above contents then:
-`sudo mv sysctl.conf /etc` to move it to the "etc" directory.
+`sudo mv sysctl.conf /etc` to move it to the "etc" directory. And if you update or upgrade MacOS, you will have to put it back after the update (again with "sudo").
 
 Restart the system after making this change.
 
