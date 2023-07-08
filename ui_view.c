@@ -58,13 +58,14 @@ void ui_setup_view_menu(Widget menubar)
     XmString zoom_out_str = XmStringCreateLocalized("Zoom Out");
     XmString zoom_out_key = XmStringCreateLocalized("-");
     XmString zoom_reset_str = XmStringCreateLocalized("Reset");
+	XMstring gridToggle_str= XmStringCreateLocalized("Show grid");
 
 
     XmVaCreateSimplePulldownMenu(menubar, "view_menu", 2, cb_view_menu_,
             XmVaPUSHBUTTON, zoom_in_str, 'Z', "<Key>plus", zoom_in_key,
             XmVaPUSHBUTTON, zoom_out_str, 'O',"<Key>minus", zoom_out_key,
-            XmVaPUSHBUTTON, zoom_reset_str, 'R', NULL, NULL,
-            NULL);
+            XmVaPUSHBUTTON, zoom_reset_str, 'R', NULL, NULL, NULL /*,
+		XmVaTOGGLEBUTTON, gridToggle_str, 'G',"<Key>G", toggle_grid*/);
 
     XmStringFree(zoom_reset_str);
     XmStringFree(zoom_in_str);
