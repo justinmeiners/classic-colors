@@ -1,5 +1,6 @@
 Classic colors uses an modified X11 colors list directly taken 
-from X11 sources as an fallback source,
+from X11 sources as an fallback source, said license from 
+snippet is shown below:
 
 
 
