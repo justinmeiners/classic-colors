@@ -67,6 +67,7 @@ int find_rgb_txt_path(char* buffer, size_t max)
     //.rgb files were removed?
     // https://forums.freebsd.org/threads/where-did-rgb-txt-go.53802/
     const char* to_try[] = {
+        //File will be be based upon the motif main directory libaries.
         "share/X11/rgb.txt",
         "etc/X11/rgb.txt",
         "lib/X11/rgb.txt",

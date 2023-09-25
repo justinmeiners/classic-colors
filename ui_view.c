@@ -58,7 +58,7 @@ void ui_setup_view_menu(Widget menubar)
     XmString zoom_out_str = XmStringCreateLocalized("Zoom Out");
     XmString zoom_out_key = XmStringCreateLocalized("-");
     XmString zoom_reset_str = XmStringCreateLocalized("Reset");
-	XMstring gridToggle_str= XmStringCreateLocalized("Show grid");
+	XmString gridToggle_str= XmStringCreateLocalized("Show grid");
 
 
     XmVaCreateSimplePulldownMenu(menubar, "view_menu", 2, cb_view_menu_,
