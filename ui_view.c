@@ -46,6 +46,8 @@ void cb_view_menu_(Widget widget, XtPointer a, XtPointer b)
             ctx->viewport.zoom = 1;
             ctx->viewport.paint_x = ctx->viewport.paint_y = 0;
             break;
+        case 4:
+            break;
     }
 
     ui_refresh_drawing(1);
@@ -63,15 +65,18 @@ void ui_setup_view_menu(Widget menubar)
 
     XmVaCreateSimplePulldownMenu(menubar, "view_menu", 2, cb_view_menu_,
             XmVaPUSHBUTTON, zoom_in_str, 'Z', "<Key>plus", zoom_in_key,
-            XmVaPUSHBUTTON, zoom_out_str, 'O',"<Key>minus", zoom_out_key,
-            XmVaPUSHBUTTON, zoom_reset_str, 'R', NULL, NULL, NULL /*,
-		XmVaTOGGLEBUTTON, gridToggle_str, 'G',"<Key>G", toggle_grid*/);
+            XmVaPUSHBUTTON, zoom_out_str, 'O', "<Key>minus", zoom_out_key,
+            XmVaPUSHBUTTON, zoom_reset_str, 'R', NULL, NULL, 
+            NULL
+	    	/*XmVaTOGGLEBUTTON, gridToggle_str, 'G', "<Key>G", gridToggle_key*/);
 
     XmStringFree(zoom_reset_str);
     XmStringFree(zoom_in_str);
     XmStringFree(zoom_in_key);
     XmStringFree(zoom_out_str);
     XmStringFree(zoom_out_key);
+    /*XmStringFree(gridToggle_str);
+    XmStringFree(gridToggle_key);*/
 
 }
 
