@@ -71,7 +71,7 @@ int find_rgb_txt_path(char* buffer, size_t max)
         "share/X11/rgb.txt",
         "etc/X11/rgb.txt",
         "lib/X11/rgb.txt",
-	"opt/X11/share/X11/rbg.txt"
+	"/opt/X11/share/X11/rbg.txt"
     };
 
     size_t n = sizeof(to_try) / sizeof(*to_try);
