@@ -340,7 +340,7 @@ void ui_setup_file_menu(Widget menubar)
     XmString save_key = XmStringCreateLocalized("Ctrl+S");
     XmString save_as_str = XmStringCreateLocalized("Save As");
     XmString exit_str = XmStringCreateLocalized("Exit");
-    XmString exit_key = XmStringCreateLocalized("Ctrl + Q");
+    XmString exit_key = XmStringCreateLocalized("Ctrl+Q");
 
     XmVaCreateSimplePulldownMenu(menubar, "file_menu", 0, ui_cb_file_menu,
             XmVaPUSHBUTTON, new_str, 'N', NULL, NULL,
