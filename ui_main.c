@@ -193,6 +193,7 @@ Widget ui_setup_menu(Widget parent)
     XmString edit_str = XmStringCreateLocalized("Edit");
     XmString view_str = XmStringCreateLocalized("View");
     XmString image_str = XmStringCreateLocalized("Image");
+    XmString special_str = XmStringCreateLocalized("Special");
     XmString help_str = XmStringCreateLocalized("Help");
 
     Widget menuBar = XmVaCreateSimpleMenuBar(parent, "menuBar",
@@ -203,6 +204,7 @@ Widget ui_setup_menu(Widget parent)
             NULL);
 
     XmStringFree(help_str);
+    XmStringFree(special_str);
     XmStringFree(image_str);
     XmStringFree(view_str);
     XmStringFree(edit_str);
@@ -212,6 +214,26 @@ Widget ui_setup_menu(Widget parent)
     ui_setup_edit_menu(menuBar);
     ui_setup_image_menu(menuBar);
     ui_setup_view_menu(menuBar);
+    //ui_setup_special_menu(menuBar); Add in special functions later on
+
+    XmString hisdump_str = XmStringCreateLocalized("Histroy erase");
+
+
+
+    /*XmString manual_str = XmStringCreateLocalized("Manual");
+    XmString about_str = XmStringCreateLocalized("About");*/
+
+    Widget special_button = XmCreateCascadeButton(menuBar, "Special", NULL, 0);
+    XtVaSetValues(menuBar, XmNmenuHelpWidget, special_button, NULL);
+
+    Widget special_bar = XmVaCreateSimplePulldownMenu(menuBar, "special_menu",
+            -1, cb_help_menu_,
+            XmVaPUSHBUTTON, hisdump_str, 'D', NULL, NULL,
+            NULL);
+
+    XtVaSetValues(special_button, XmNsubMenuId, special_bar, NULL);
+
+    XmStringFree(hisdump_str);
 
     XmString manual_str = XmStringCreateLocalized("Manual");
     XmString about_str = XmStringCreateLocalized("About");
@@ -230,6 +252,8 @@ Widget ui_setup_menu(Widget parent)
     XmStringFree(manual_str);
     XmStringFree(about_str);
 
+    
+    XtManageChild(special_button);
     XtManageChild(help_button);
     XtManageChild(menuBar);
 

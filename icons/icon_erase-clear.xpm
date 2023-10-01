@@ -1,0 +1,35 @@
+/* XPM */
+static char *icon_erase-clear[] = {
+/* columns rows colors chars-per-pixel */
+"24 24 5 1",
+"  c #444444",
+". c #808080",
+"X c #BBBBBB",
+"o c #DDDDDD",
+"O c gray100",
+/* pixels */
+"OOOOOOOOOOOOOooooooooooo",
+"OOOOOOOOOOOOoooooooooooo",
+"OOOOOOOOOOOooooooooooooo",
+"OOOOOOOOOOooooooooooooo.",
+"OOOOOOOOOXXXXXXXXXXXXX..",
+"OOOOOOOOOXXXXXXXXXXXXX..",
+"OOOOOOOOXXXXXXXXXXXXX...",
+"OOOOOOOOXXXXXXXXXXXXX...",
+"OOOOOOOOXXXXXXXXXXXXX...",
+"OOOOOOOOXXXXXXXXXXXX....",
+"OOOOOOOXXXXXXXXXXXXX....",
+"OOOOOOOXXXXXXXXXXXXX...O",
+"OOOOOOOXXXXXXXXXXXX...OO",
+"OOOOOOXXXXXXXXXXXXX..OOO",
+"OOOOOOXXXXXXXXXXXXX.OOOO",
+"OOOOOO ..  ..  ..  OOOOO",
+"OOOOO  ..  ..  .. OOOOOO",
+"OOOO ..  ..  ..  OOOOOOO",
+"OOO  ..  ..  .. OOOOOOOO",
+"OO ..  ..  ..  OOOOOOOOO",
+"O  ..  ..  .. OOOOOOOOOO",
+" ..  ..  ..  OOOOOOOOOOO",
+" ..  ..  .. OOOOOOOOOOOO",
+".  ..  ..  OOOOOOOOOOOOO"
+};

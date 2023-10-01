@@ -40,13 +40,11 @@ void cb_view_menu_(Widget widget, XtPointer a, XtPointer b)
             ctx->viewport = cc_viewport_zoom_centered(&ctx->viewport, new_zoom);
             break;
         }
-        case 3:
-            break;
         case 2:
             ctx->viewport.zoom = 1;
             ctx->viewport.paint_x = ctx->viewport.paint_y = 0;
             break;
-        case 4:
+        case 3:
             break;
     }
 
@@ -60,23 +58,25 @@ void ui_setup_view_menu(Widget menubar)
     XmString zoom_out_str = XmStringCreateLocalized("Zoom Out");
     XmString zoom_out_key = XmStringCreateLocalized("-");
     XmString zoom_reset_str = XmStringCreateLocalized("Reset");
-	XmString gridToggle_str= XmStringCreateLocalized("Show grid");
+	XmString grid_toggle_str = XmStringCreateLocalized("Show grid");
+    XmString grid_toggle_key = XmStringCreateLocalized("G");
 
 
     XmVaCreateSimplePulldownMenu(menubar, "view_menu", 2, cb_view_menu_,
             XmVaPUSHBUTTON, zoom_in_str, 'Z', "<Key>plus", zoom_in_key,
             XmVaPUSHBUTTON, zoom_out_str, 'O', "<Key>minus", zoom_out_key,
             XmVaPUSHBUTTON, zoom_reset_str, 'R', NULL, NULL, 
-            NULL
-	    	/*XmVaTOGGLEBUTTON, gridToggle_str, 'G', "<Key>G", gridToggle_key*/);
+            
+	    	XmVaTOGGLEBUTTON, grid_toggle_str, 'G', "<Key>G", grid_toggle_key,
+            NULL, NULL, NULL, NULL, NULL);
 
     XmStringFree(zoom_reset_str);
     XmStringFree(zoom_in_str);
     XmStringFree(zoom_in_key);
     XmStringFree(zoom_out_str);
     XmStringFree(zoom_out_key);
-    /*XmStringFree(gridToggle_str);
-    XmStringFree(gridToggle_key);*/
+    XmStringFree(grid_toggle_str);
+    XmStringFree(grid_toggle_key);
 
 }
 
