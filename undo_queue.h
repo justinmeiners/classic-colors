@@ -42,6 +42,8 @@ typedef struct
     UndoPatch* first_undo;
 } CcUndoQueue;
 
+
+
 void cc_undo_queue_init(CcUndoQueue* q);
 
 void cc_undo_queue_clear(CcUndoQueue* q);

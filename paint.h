@@ -28,7 +28,7 @@ TODO:
 
 - [ ] fix window lifetime
 - [ ] zoom in/out scrollbar coordinates/center point
-- [ ] copy paste/files undo issue
+- [ ] copy paste/files undo issue (Crashing if the buffer is too full)
 
 - [x] use widechar on text layers. XmTextGetStringWcs
 - [x] use glyph functions for lookup instead of codepoint (stb_truetype header)
@@ -80,6 +80,10 @@ FUTURE:
 
 - polygon tool. 
 - polyogn select tool. (both need point in polygon tests.)
+
+UNCERTIN:
+
+[X] Lasso
 
 */
 
@@ -187,6 +191,7 @@ typedef struct
 
 void paint_undo(PaintContext* ctx);
 void paint_redo(PaintContext* ctx);
+void paint_history_clear(PaintContext* ctx);
 
 const char* paint_file_path(PaintContext* ctx);
 int paint_open_file(PaintContext* ctx, const char* path, const char** error_message);

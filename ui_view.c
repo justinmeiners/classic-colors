@@ -45,6 +45,7 @@ void cb_view_menu_(Widget widget, XtPointer a, XtPointer b)
             ctx->viewport.paint_x = ctx->viewport.paint_y = 0;
             break;
         case 3:
+
             break;
     }
 
@@ -66,15 +67,18 @@ void ui_setup_view_menu(Widget menubar)
             XmVaPUSHBUTTON, zoom_in_str, 'Z', "<Key>plus", zoom_in_key,
             XmVaPUSHBUTTON, zoom_out_str, 'O', "<Key>minus", zoom_out_key,
             XmVaPUSHBUTTON, zoom_reset_str, 'R', NULL, NULL, 
-            
+            XmVaSEPARATOR,
 	    	XmVaTOGGLEBUTTON, grid_toggle_str, 'G', "<Key>G", grid_toggle_key,
             NULL, NULL, NULL, NULL, NULL);
 
     XmStringFree(zoom_reset_str);
+
     XmStringFree(zoom_in_str);
     XmStringFree(zoom_in_key);
+
     XmStringFree(zoom_out_str);
     XmStringFree(zoom_out_key);
+
     XmStringFree(grid_toggle_str);
     XmStringFree(grid_toggle_key);
 

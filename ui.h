@@ -55,6 +55,7 @@ void ui_setup_file_menu(Widget menuBar);
 void ui_setup_edit_menu(Widget menuBar);
 void ui_setup_image_menu(Widget menuBar);
 void ui_setup_view_menu(Widget menuBar);
+void ui_setup_special_menu(Widget menuBar);
 
 Widget ui_setup_tool_area(Widget parent);
 Widget ui_setup_command_area(Widget parent);

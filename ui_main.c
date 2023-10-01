@@ -176,12 +176,12 @@ void ui_refresh_title(void)
     if (path)
     {
         char* copy = strndup(path, OS_PATH_MAX);
-        snprintf(title, OS_PATH_MAX, "%s - Classic Colors", basename(copy));
+        snprintf(title, OS_PATH_MAX, "Sliver Colors: %s", basename(copy));
         free(copy);
     }
     else
     {
-        snprintf(title, OS_PATH_MAX, "Classic Colors");
+        snprintf(title, OS_PATH_MAX, "Sliver Colors");
     }
     XtVaSetValues(XtParent(g_main_w), XmNtitle, title, NULL);
 }
@@ -192,7 +192,7 @@ Widget ui_setup_menu(Widget parent)
     XmString file_str = XmStringCreateLocalized("File");
     XmString edit_str = XmStringCreateLocalized("Edit");
     XmString view_str = XmStringCreateLocalized("View");
-    XmString image_str = XmStringCreateLocalized("Image");
+    XmString image_str = XmStringCreateLocalized("Image/Selection");
     XmString special_str = XmStringCreateLocalized("Special");
     XmString help_str = XmStringCreateLocalized("Help");
 
@@ -201,6 +201,7 @@ Widget ui_setup_menu(Widget parent)
             XmVaCASCADEBUTTON, edit_str, 'E',
             XmVaCASCADEBUTTON, view_str, 'V',
             XmVaCASCADEBUTTON, image_str, 'I',
+            XmVaCASCADEBUTTON, special_str, 'S',
             NULL);
 
     XmStringFree(help_str);
@@ -210,20 +211,19 @@ Widget ui_setup_menu(Widget parent)
     XmStringFree(edit_str);
     XmStringFree(file_str);
 
+
     ui_setup_file_menu(menuBar);
+        ui_setup_special_menu(menuBar); //Add in special functions later on, also there seems to be a mistorious to me bug in here(Placing it at the last will result in the contents of special.c replacing that of view.c's.)…
     ui_setup_edit_menu(menuBar);
     ui_setup_image_menu(menuBar);
     ui_setup_view_menu(menuBar);
-    //ui_setup_special_menu(menuBar); Add in special functions later on
-
-    XmString hisdump_str = XmStringCreateLocalized("Histroy erase");
 
 
+   
 
-    /*XmString manual_str = XmStringCreateLocalized("Manual");
-    XmString about_str = XmStringCreateLocalized("About");*/
+    //XmString hisdump_str = XmStringCreateLocalized("Histroy erase");
 
-    Widget special_button = XmCreateCascadeButton(menuBar, "Special", NULL, 0);
+    /*Widget special_button = XmCreateCascadeButton(menuBar, "Special", NULL, 0);
     XtVaSetValues(menuBar, XmNmenuHelpWidget, special_button, NULL);
 
     Widget special_bar = XmVaCreateSimplePulldownMenu(menuBar, "special_menu",
@@ -233,7 +233,7 @@ Widget ui_setup_menu(Widget parent)
 
     XtVaSetValues(special_button, XmNsubMenuId, special_bar, NULL);
 
-    XmStringFree(hisdump_str);
+    XmStringFree(hisdump_str);*/ //Move history erease as an function in the real special menu later on
 
     XmString manual_str = XmStringCreateLocalized("Manual");
     XmString about_str = XmStringCreateLocalized("About");
@@ -253,7 +253,7 @@ Widget ui_setup_menu(Widget parent)
     XmStringFree(about_str);
 
     
-    XtManageChild(special_button);
+    //XtManageChild(special_button);
     XtManageChild(help_button);
     XtManageChild(menuBar);
 

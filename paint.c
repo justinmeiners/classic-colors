@@ -37,7 +37,7 @@ const FontEntry font_table[] = {
     { "Serif", fonts_seshat_otf },
     { "Sans-Serif", fonts_vegur_regular_otf },
     { "Monospace", fonts_monospace_otf },
-};
+};//A flexable system might replace this in the future
 
 const char* paint_font_name(int index)
 {
@@ -91,6 +91,10 @@ void paint_redo(PaintContext* ctx)
     cc_layer_reset(ctx->layers + LAYER_OVERLAY);
 }
 
+/*void paint_history_clear(PaintContext* ctx)
+{
+    cc_undo_queue_clear(&ctx->clear);
+}*/
 
 const char* paint_file_path(PaintContext* ctx)
 {

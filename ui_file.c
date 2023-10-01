@@ -121,6 +121,9 @@ static Widget setup_open_dialog_(Widget parent)
     XnFileSelectionBoxAddFilter(dialog, "*.gif");
     XnFileSelectionBoxAddFilter(dialog, "*.bmp");
     XnFileSelectionBoxAddFilter(dialog, "*.tga");
+    //XnFileSelectionBoxAddFilter(dialog, "*.xpm");
+    //XnFileSelectionBoxAddFilter(dialog, "*.webp");
+
 
     Widget detailButton = XnFileSelectionBoxGetChild(dialog, XnFSB_DETAIL_TOGGLE_BUTTON);
     XtSetSensitive(detailButton, False);
@@ -337,6 +340,7 @@ void ui_setup_file_menu(Widget menubar)
     XmString save_key = XmStringCreateLocalized("Ctrl+S");
     XmString save_as_str = XmStringCreateLocalized("Save As");
     XmString exit_str = XmStringCreateLocalized("Exit");
+    XmString exit_key = XmStringCreateLocalized("Ctrl + Q");
 
     XmVaCreateSimplePulldownMenu(menubar, "file_menu", 0, ui_cb_file_menu,
             XmVaPUSHBUTTON, new_str, 'N', NULL, NULL,
@@ -344,7 +348,7 @@ void ui_setup_file_menu(Widget menubar)
             XmVaPUSHBUTTON, save_str, 'S', "Ctrl<Key>s", save_key,
             XmVaPUSHBUTTON, save_as_str, 'A', NULL, NULL,
             XmVaSEPARATOR,
-            XmVaPUSHBUTTON, exit_str, 'x', NULL, NULL,
+            XmVaPUSHBUTTON, exit_str, 'x', "Ctrl<Key>Q", exit_key,
             NULL);
 
     XmStringFree(exit_str);
