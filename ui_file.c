@@ -352,6 +352,7 @@ void ui_setup_file_menu(Widget menubar)
             NULL);
 
     XmStringFree(exit_str);
+    XmStringFree(exit_key);
     XmStringFree(new_str);
     XmStringFree(open_str);
     XmStringFree(save_key);
