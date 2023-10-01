@@ -176,7 +176,7 @@ void ui_refresh_title(void)
     if (path)
     {
         char* copy = strndup(path, OS_PATH_MAX);
-        snprintf(title, OS_PATH_MAX, "Sliver Colors: %s", basename(copy));
+        snprintf(title, OS_PATH_MAX, "Sliver Colors %s", basename(copy));
         free(copy);
     }
     else
