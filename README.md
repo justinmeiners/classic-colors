@@ -3,7 +3,7 @@
 
 Classic Colors is a simple and efficient paint program for Unix systems, inspired by MS Paint (Windows 95-98 version).
 It is built on the time-tested [Motif][about-motif] UI library, so it should last for a long time
-and be widely compatible with various Unix flavours (Leagcy unix (and such compatable) systems may not be tested as they may be absurdly rare -e,g. IRIX, HP-UX, AIX, OpenVMS, NeXTSTEP, SCO UNIX, etc.).
+and be widely compatible with various Unix flavours (Leagcy unix (and such compatable) systems may not be tested as they may be absurdly rare -e,g. IRIX, HP-UX, AIX, OpenVMS, NeXTSTEP, SCO UNIX, Domain/OS SysV & BSD layers, etc.).
 
 ![classic colors screenshot](screenshots/1.png)
 
@@ -12,7 +12,7 @@ and be widely compatible with various Unix flavours (Leagcy unix (and such compa
 ## Dependencies
 
 For now, you must build from source (help making it available in package managers would be greatly appreciated.)  
-It has been tested on Debian (Ubuntu, Raspbian), OpenBSD, NetBSD, and macOS(Homebrew + Pkgsrc).
+It has been tested on Debian (Ubuntu, Raspbian/RaspberryPi-OS), OpenBSD, NetBSD, and macOS(Homebrew + Pkgsrc).
 
 **List**
 
