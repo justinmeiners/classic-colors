@@ -4,3 +4,4 @@ classic-colors
 *.o
 config.mk
 .DS_Store
+bin/sliver-colors
