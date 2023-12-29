@@ -537,18 +537,21 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
     int W = b->w;
     int H = b->h;
 
-    assert(sx >= 0 && sy >= 0 && sx <= W && sy <= H);
-
-    uint32_t old_color = b->data[sx + sy * W];
-
-    if (old_color == new_color)
+    if (sx < 0 || sy < 0 || sx >= W || sy >= H)
     {
-        CcRect r = { 0, 0, 0, 0 };
-        return r;
+        return (CcRect) { 0, 0, 0, 0 };
     }
 
-    // every pixel will be visited at most once 
-    CcCoord* queue = malloc(sizeof(CcCoord) * b->w * b->h);
+    uint32_t old_color = b->data[sx + sy * W];
+    if (old_color == new_color)
+    {
+        return (CcRect) { 0, 0, 0, 0 };
+    }
+
+    b->data[sx + sy * W] = new_color;
+
+    // every pixel will be visited at most once
+    CcCoord* queue = malloc(sizeof(CcCoord) * W * H);
     CcCoord* front = queue;
     CcCoord* back = front;
 
@@ -562,7 +565,6 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
     int min_y = sy;
     int max_y = sy;
 
-
     while (front != back)
     {
         int x = front->x;
@@ -575,40 +577,35 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
 
         if (0 <= x - 1 && b->data[loc - 1] == old_color)
         {
+            // immediately indicate that this pixel has been visited, to avoid double counting.
+            b->data[loc - 1] = new_color;
             back->x = x - 1;
             back->y = y;
             ++back;
-
-            // must immediately indicate that this pixel has been visited,
-            // to avoid double counting.
-            b->data[loc - 1] = new_color;
         }
 
         if (x + 1 < W && b->data[loc + 1] == old_color)
         {
+            b->data[loc + 1] = new_color;
             back->x = x + 1;
             back->y = y;
             ++back;
-
-            b->data[loc + 1] = new_color;
         }
 
-        if (0 < y && b->data[loc - W] == old_color)
+        if (0 <= y - 1 && b->data[loc - W] == old_color)
         {
+            b->data[loc - W] = new_color;
             back->x = x;
             back->y = y - 1;
             ++back;
-
-            b->data[loc - W] = new_color;
         }
 
         if (y + 1 < H && b->data[loc + W] == old_color)
         {
+            b->data[loc + W] = new_color;
             back->x = x;
             back->y = y + 1;
             ++back;
-
-            b->data[loc + W] = new_color;
         }
 
         ++front;
