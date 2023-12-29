@@ -23,20 +23,8 @@
 
 Widget open_dialog;
 Widget save_dialog;
-char* potential_save_path = NULL;
 
-static char* copy_paint_dirname_(void)
-{
-    if (paint_file_path(&g_paint_ctx))
-    {
-        char* copy = strndup(paint_file_path(&g_paint_ctx), OS_PATH_MAX);
-        return dirname(copy);
-    }
-    else
-    {
-       return NULL;
-    }
-}
+char potential_save_path[OS_PATH_MAX];
 
 void ui_new(Widget widget)
 {
@@ -161,22 +149,20 @@ static int finalize_save_(const char* filepath, Widget widget)
     }
 }
 
-static void confirm_save_ok_(Widget widget, XtPointer client_data, XtPointer call_data)
+static void confirm_overwrite_ok_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     XtUnmanageChild(widget);
     XtDestroyWidget(widget);
 
     if (finalize_save_(potential_save_path, save_dialog))
     {
+        XtUnmanageChild(save_dialog);
         XtDestroyWidget(save_dialog);
         ui_refresh_title();
     }
-
-    if (potential_save_path) XtFree(potential_save_path);
-    potential_save_path = NULL;
 }
 
-static void confirm_save_cancel_(Widget widget, XtPointer client_data, XtPointer call_data)
+static void confirm_overwrite_cancel_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     XtUnmanageChild(widget);
     XtDestroyWidget(widget);
@@ -193,12 +179,14 @@ static void cb_save_file_(Widget widget, XtPointer client_data, XtPointer call_d
 
     char *filepath = NULL;
     XmStringGetLtoR(cbs->value, XmSTRING_DEFAULT_CHARSET, &filepath);
+    strncpy(potential_save_path, filepath, OS_PATH_MAX);
+    XtFree(filepath);
 
-    FILE* test_file = fopen(filepath, "rb");
+    FILE* test_file = fopen(potential_save_path, "rb");
     if (!test_file)
     {
         // File does not exist
-        if (finalize_save_(filepath, widget))
+        if (finalize_save_(potential_save_path, widget))
         {
             // success. close.
             XtUnmanageChild(widget);
@@ -210,7 +198,6 @@ static void cb_save_file_(Widget widget, XtPointer client_data, XtPointer call_d
     {
         // File does exist
         fclose(test_file);
-        potential_save_path = filepath;
 
         // confirm we want to overwrite
         Widget confirm = XmCreateQuestionDialog(widget, "dialog", NULL, 0);
@@ -226,8 +213,8 @@ static void cb_save_file_(Widget widget, XtPointer client_data, XtPointer call_d
                 NULL
                 );
 
-        XtAddCallback(confirm, XmNokCallback, confirm_save_ok_, NULL);
-        XtAddCallback(confirm, XmNcancelCallback, confirm_save_cancel_, NULL);
+        XtAddCallback(confirm, XmNokCallback, confirm_overwrite_ok_, NULL);
+        XtAddCallback(confirm, XmNcancelCallback, confirm_overwrite_cancel_, NULL);
         XtUnmanageChild(XtNameToWidget(confirm, "Help"));
 
         XtManageChild(confirm);
@@ -236,7 +223,6 @@ static void cb_save_file_(Widget widget, XtPointer client_data, XtPointer call_d
         XmStringFree(no);
         XmStringFree(message);
     }
-    free(filepath);
 }
 
 static void cb_save_cancel_(Widget widget, XtPointer client_data, XtPointer call_data)
