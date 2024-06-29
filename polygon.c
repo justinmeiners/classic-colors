@@ -296,7 +296,7 @@ int scanline_crossings_(const CcCoord* points, const CriticalValue* y_dirs, int 
 static
 int crossing_compare_(const void *ap, const void *bp)
 {
-    int a = *((int*)ap);//Somehow github did not see my alterations…
+    int a = *((int*)ap);
     int b = *((int*)bp);
     return a - b;
 }
