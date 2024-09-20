@@ -36,9 +36,6 @@ void cc_polygon_update_last(CcPolygon* p, CcCoord x, int align);
 
 CcRect cc_polygon_rect(const CcPolygon* p);
 void cc_polygon_shift(CcPolygon* p, CcCoord shift);
-
-void cc_polygon_remove_duplicates_open(CcPolygon* p);
-void cc_polygon_remove_duplicates_closed(CcPolygon* p);
 void cc_polygon_cleanup(CcPolygon* p, int closed);
 
 void cc_bitmap_stroke_polygon(

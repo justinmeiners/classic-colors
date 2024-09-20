@@ -79,55 +79,62 @@ CcRect cc_polygon_rect(const CcPolygon* p)
     return cc_rect_around_points(p->points, p->count);
 }
 
+static
+void _points_shift(CcCoord* points, int count, CcCoord shift)
+{
+    for (int i = 0; i < count; ++i)
+    {
+        points[i].x += shift.x;
+        points[i].y += shift.y;
+    }
+}
+
 void cc_polygon_shift(CcPolygon* p, CcCoord shift)
 {
-    for (int i = 0; i < p->count; ++i)
-    {
-        p->points[i].x += shift.x;
-        p->points[i].y += shift.y;
-    }
+    _points_shift(p->points, p->count, shift);
 }
 
-void cc_polygon_remove_duplicates_open(CcPolygon* p)
+static
+int _remove_duplicates_open(CcCoord *points, int n)
 {
-    if (p->count <= 0) return;
+    if (n == 0) return n;
 
-    int count = 1;
-    for (int i = 1; i < p->count; ++i)
+    int keep = 1;
+    for (int i = 1; i < n; ++i)
     {
-        if (p->points[i - 1].x == p->points[i].x &&
-            p->points[i - 1].y == p->points[i].y) {
+        if (points[i - 1].x == points[i].x &&
+            points[i - 1].y == points[i].y) {
             // skip over
         } else {
-            p->points[count] = p->points[i];
-            ++count;
+            points[keep] = points[i];
+            ++keep;
         }
     }
-    p->count = count;
+    return keep;
 }
 
-void cc_polygon_remove_duplicates_closed(CcPolygon* p)
+static
+int _remove_duplicates_closed(CcCoord *points, int n)
 {
-    if (p->count <= 0) return;
-    cc_polygon_remove_duplicates_open(p);
+    if (n == 0) return n;
+    n = _remove_duplicates_open(points, n);
 
-    if (p->count > 1)
+    if (n > 1)
     {
-        int n = p->count;
-        if (p->points[n - 1].x == p->points[0].x && p->points[n - 1].y == p->points[0].y) --n;
-        p->count = n;
+        if (points[n - 1].x == points[0].x && points[n - 1].y == points[0].y) --n;
     }
+    return n;
 }
 
 void cc_polygon_cleanup(CcPolygon* p, int closed)
 {
     if (closed)
     {
-        cc_polygon_remove_duplicates_closed(p);
+        p->count = _remove_duplicates_closed(p->points, p->count);
     }
     else
     {
-        cc_polygon_remove_duplicates_open(p);
+        p->count = _remove_duplicates_open(p->points, p->count);
     }
 }
 
