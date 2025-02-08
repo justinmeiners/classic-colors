@@ -505,7 +505,8 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
 
     shm_image->data = shmat(ctx->shminfo.shmid, 0, 0);
     ctx->shminfo.shmaddr = shm_image->data;
-    ctx->shminfo.readOnly = 0;
+    // server should not modify image
+    ctx->shminfo.readOnly = 1;
 
     if (XShmAttach(dpy, &ctx->shminfo) == 0)
     {
