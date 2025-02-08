@@ -92,12 +92,16 @@ void ui_set_color(Widget window, CcPixel color, int fg)
     Arg args[UI_ARGS_MAX];
 
     PaintContext* ctx = &g_paint_ctx;
-
     paint_set_color(ctx, color, fg);
 
     Widget widget = XtNameToWidget(window, fg ? "*fg_color" : "*bg_color");
     Display* display = XtDisplay(window);
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
+
+    n = 0;
+    Pixmap old_pixmap;
+    XtSetArg(args[n], XmNlabelPixmap, &old_pixmap); ++n;
+    XtGetValues(widget, args, n);
 
     char name[XCOLOR_NAME_MAX];
     color_to_xname_(name, color);
@@ -108,13 +112,15 @@ void ui_set_color(Widget window, CcPixel color, int fg)
     XParseColor(display, screen_colormap, name, &xcolor);
     XAllocColor(display, screen_colormap, &xcolor);
 
-    n = 0;
     Pixmap pixmap = XmGetPixmap(XtScreen(widget), "color_well", xcolor.pixel, xcolor.pixel);
 
     n = 0;
     XtSetArg(args[n], XmNlabelType, XmPIXMAP); ++n;
     XtSetArg(args[n], XmNlabelPixmap, pixmap); ++n;
     XtSetValues(widget, args, n);
+
+    // release old pixmap (ref counted)
+    XmDestroyPixmap(XtScreen(widget), old_pixmap);
 
     if (g_color_picker && fg == g_edit_fg)
     {
@@ -401,46 +407,41 @@ void test_colors_(Display *display)
 
 
 static
-void color_clicked_(Widget widget, void* client_data, XEvent* event, Boolean* continue_dispatch)
+void select_color_well_(Widget widget, size_t color_index, int fg)
 {
     Display* display = XtDisplay(widget);
-
     if (DEBUG_LOG) {
         test_colors_(display);
     }
 
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
-
-    size_t index = (size_t)client_data;
     XColor xcolor;
-    XParseColor(display, screen_colormap, g_default_colors[index], &xcolor);
+    XParseColor(display, screen_colormap, g_default_colors[color_index], &xcolor);
     CcPixel color = xcolor_to_color_(xcolor);
+    ui_set_color(g_main_w, color, fg);
+}
 
-    int fg = 0;
-
+static
+void color_clicked_(Widget widget, void* client_data, XEvent* event, Boolean* continue_dispatch)
+{
+    // handle right click
     switch (event->type)
     {
     case ButtonPress:
-        if (event->xbutton.button == 1)
+        if (event->xbutton.button == 3)
         {
-            fg = 1;
+            select_color_well_(widget, (size_t)client_data, 0);
+            *continue_dispatch = 0;
         }
-        else if (event->xbutton.button == 3)
-        {
-            fg = 0;
-        }
-        *continue_dispatch = 0;
         break;
     }
-
-    ui_set_color(g_main_w, color, fg);
 }
 
 // Double click broken in Motif? https://bugzilla.redhat.com/show_bug.cgi?id=184143
 static void color_cell_activate_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     XmPushButtonCallbackStruct* cbs = (XmPushButtonCallbackStruct*)call_data;
-
+    select_color_well_(widget, (size_t)client_data, 1);
 }
 
 static void color_swap_(Widget widget, XtPointer client_data, XtPointer call_data)
@@ -456,7 +457,6 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
 {
      int n = 0;
      Arg args[UI_ARGS_MAX];
-
 
      PaintContext* ctx = &g_paint_ctx;
      size_t index = (size_t)client_data;
@@ -483,14 +483,12 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
      XtManageChild(g_color_picker);
 }
 
-#define COLOR_WELL_ALIGNMENT 8
-
+#define BITMAP_ALIGN_BYTES 8
 
 #define COLOR_WELL_W 32
-// (much larger than needed)
-#define COLOR_WELL_STRIDE (COLOR_WELL_ALIGNMENT)
+#define COLOR_WELL_STRIDE (ALIGN_UP(COLOR_WELL_W, BITMAP_ALIGN_BYTES * 8) / 8)
 #define COLOR_WELL_SMALL_W 16
-#define COLOR_WELL_SMALL_STRIDE (COLOR_WELL_ALIGNMENT)
+#define COLOR_WELL_SMALL_STRIDE (ALIGN_UP(COLOR_WELL_SMALL_W, BITMAP_ALIGN_BYTES * 8) / 8)
 
 static
 char color_well_buffer_[COLOR_WELL_W * COLOR_WELL_STRIDE];
@@ -509,11 +507,12 @@ void install_color_images_(Widget parent)
 
     Display* display = XtDisplay(parent);
 
+    const size_t bits_per_bytes = 8;
     XImage *color_well = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, color_well_buffer_,
-                                      COLOR_WELL_W, COLOR_WELL_W, 8, COLOR_WELL_ALIGNMENT);
+                                      COLOR_WELL_W, COLOR_WELL_W, bits_per_bytes, BITMAP_ALIGN_BYTES);
 
     XImage *color_well_small = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, color_well_buffer_small_,
-                                            COLOR_WELL_SMALL_W, COLOR_WELL_SMALL_W, 8, 8);
+                                            COLOR_WELL_SMALL_W, COLOR_WELL_SMALL_W, bits_per_bytes, BITMAP_ALIGN_BYTES);
 
     if (!color_well || !color_well_small) {
         fprintf(stderr, "failed to create color image\n");
