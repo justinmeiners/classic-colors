@@ -415,8 +415,8 @@ void shm_destroy_image_(DrawInfo* ctx, Display* dpy)
 static
 void double_buffer_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
 {
-    int w = composite->bitmaps->w;
-    int h = composite->bitmaps->h;
+    int w = composite->bitmap.w;
+    int h = composite->bitmap.h;
 
     int needs_to_resize = !ctx->x_images[0]
         || (ctx->x_images[0]->width != w)
@@ -452,8 +452,8 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
     assert(0);
     return 0;
 #else 
-    int w = composite->bitmaps->w;
-    int h = composite->bitmaps->h;
+    int w = composite->bitmap.w;
+    int h = composite->bitmap.h;
 
     int needs_to_resize = !ctx->shm_image
         || (ctx->shm_image->width != w)
@@ -555,8 +555,8 @@ void ui_refresh_drawing(int clear)
 
     const CcLayer* composite = ctx->layers + LAYER_COMPOSITE;
 
-    int w = composite->bitmaps->w;
-    int h = composite->bitmaps->h;
+    int w = composite->bitmap.w;
+    int h = composite->bitmap.h;
    
     if (buffer->use_shm)
     {
@@ -565,7 +565,7 @@ void ui_refresh_drawing(int clear)
         if (result)
         {
 #ifdef FEATURE_SHM
-            copy_bitmap_to_ximage_(buffer->shm_image, composite->bitmaps, &buffer->x_visual_info);
+            copy_bitmap_to_ximage_(buffer->shm_image, &composite->bitmap, &buffer->x_visual_info);
             XShmPutImage(dpy, window, buffer->x_gc, buffer->shm_image, 0, 0, 0, 0, w, h, 0);
 #else
 			assert(0);
@@ -585,7 +585,7 @@ void ui_refresh_drawing(int clear)
         // However, it's possible to imagine an optimization where the server caches the image.
         // Based on my reading of FreeDesktop this is not the case.
         double_buffer_prepare_(buffer, dpy, composite);
-        copy_bitmap_to_ximage_(buffer->x_images[buffer->x_index], composite->bitmaps, &buffer->x_visual_info);
+        copy_bitmap_to_ximage_(buffer->x_images[buffer->x_index], &composite->bitmap, &buffer->x_visual_info);
         XPutImage(dpy, window, buffer->x_gc, buffer->x_images[buffer->x_index], 0, 0, 0, 0, w, h);
         buffer->x_index = !buffer->x_index;
     }
@@ -593,13 +593,12 @@ void ui_refresh_drawing(int clear)
     if (ctx->active_layer == LAYER_OVERLAY)
     {
         const CcLayer* l = ctx->layers + ctx->active_layer;
-        if (l->bitmaps != NULL)
+        if (l->bitmap.w != 0)
         {
             int x = (l->x - ctx->viewport.paint_x) * ctx->viewport.zoom;
             int y = (l->y - ctx->viewport.paint_y) * ctx->viewport.zoom;
-            int w = (l->bitmaps->w) * ctx->viewport.zoom - 1;
-            int h = (l->bitmaps->h) * ctx->viewport.zoom - 1;
-
+            int w = (l->bitmap.w) * ctx->viewport.zoom - 1;
+            int h = (l->bitmap.h) * ctx->viewport.zoom - 1;
 
             XSetLineAttributes(dpy, buffer->x_gc, 1, LineOnOffDash, CapButt, JoinMiter);
 

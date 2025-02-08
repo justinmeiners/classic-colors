@@ -336,13 +336,13 @@ static Widget setup_attributes_dialog_(Widget parent)
         XtCreateManagedWidget("Width:", xmLabelWidgetClass, size_row, NULL, 0);
 
         Widget w = XtCreateManagedWidget("width", xmTextFieldWidgetClass, size_row, NULL, 0);
-        snprintf(scratch_buffer, SCRATCH_MAX, "%d", l->bitmaps->w);
+        snprintf(scratch_buffer, SCRATCH_MAX, "%d", l->bitmap.w);
         XmTextSetString(w, scratch_buffer);
 
         XtCreateManagedWidget("Height:", xmLabelWidgetClass, size_row, NULL, 0);
 
         Widget h = XtCreateManagedWidget("height", xmTextFieldWidgetClass, size_row, NULL, 0);
-        snprintf(scratch_buffer, SCRATCH_MAX, "%d", l->bitmaps->h);
+        snprintf(scratch_buffer, SCRATCH_MAX, "%d", l->bitmap.h);
         XmTextSetString(h, scratch_buffer);
         XtManageChild(size_row);
 

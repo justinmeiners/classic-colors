@@ -391,8 +391,9 @@ void cc_bitmap_fill_polygon(
         uint32_t color
         )
 {
-    CcCoord* copy = malloc(sizeof(CcCoord) * n);
-    memcpy(copy, points, sizeof(CcCoord) * n);
+    size_t size = sizeof(CcCoord) * n;
+    CcCoord* copy = malloc(size);
+    memcpy(copy, points, size);
     cc_bitmap_fill_polygon_inplace(dst, copy, n, color);
     free(copy);
 }

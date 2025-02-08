@@ -18,7 +18,7 @@
 #ifndef CC_COLOR_H
 #define CC_COLOR_H
 
-#include <stdint.h>
+#include "common.h"
 #include <math.h>
 
 typedef enum {
@@ -36,6 +36,8 @@ typedef enum {
 } CcColorBlend;
 
 
+typedef uint32_t CcPixel;
+
 #define COLOR_WHITE 0xFFFFFFFF
 #define COLOR_BLACK 0x000000FF
 #define COLOR_GRAY 0x888888FF
@@ -45,34 +47,53 @@ typedef enum {
 #define COLOR_CLEAR 0x00000000
 
 static inline
-int cc_color_component(uint32_t c, int i)
+CcPixel cc_color_swap(CcPixel x)
 {
-    return (c >> (24 - 8 * i)) & 0xFF;
+    return ((x & 0xFF000000) >> 24) |
+        ((x & 0x00FF0000) >> 8)  |
+        ((x & 0x0000FF00) << 8)  |
+        ((x & 0x000000FF) << 24);
 }
 
 static inline
-uint32_t cc_color_pack(const int comps[])
+CcPixel cc_color_pack(const uint8_t comps[])
 {
-    uint32_t color = 0;
-    for (int i = 0; i < 4; ++i)
-        color |= ((((uint32_t)comps[i]) & 0xFF) << (24 - 8 * i));
-    return color;
+    CcPixel color;
+    memcpy(&color, comps, sizeof(CcPixel));
+    return cc_color_swap(color);
 }
+
 static inline
-void cc_color_unpack(uint32_t c, int comps[])
+void cc_color_unpack(CcPixel c, uint8_t comps[])
 {
-    for (int i = 0; i < 4; ++i)
-        comps[i] = cc_color_component(c, i);
+    c = cc_color_swap(c);
+    memcpy(comps, &c, sizeof(CcPixel));
 }
+
+// divide by 255
+static inline
+int16_t fixed_unscale_255(int32_t x)
+{
+    int32_t wide = (x + (x >> 7)) >> 8;
+    return (int16_t)wide;
+}
+
+static inline
+int16_t fixed_mul_255(int16_t x, int16_t y)
+{
+    int32_t scaled = x * y;
+    return fixed_unscale_255(scaled);
+}
+
 
 // http://x86asm.net/articles/fixed-point-arithmetic-and-tricks/
 // https://en.wikipedia.org/wiki/Alpha_compositing
 
 static inline
-void cc_color_blend_full(
-    const int *restrict src,
-    const int *restrict dst,
-    int *restrict out
+void cc_color_blend_full2(
+    const uint8_t *restrict src,
+    const uint8_t *restrict dst,
+    uint8_t *restrict out
 ) {
     // I would really like a nice integer math one, but couldn't figure out a good way.
     // This is currently only used for text, so shouldn't be a problem.
@@ -103,46 +124,110 @@ void cc_color_blend_full(
 //      =  c_1 a_1 + c_2 - c_2 a_1
 //      = c_2 + a_1(c_1 - c_2)
 static inline
-void cc_color_blend_overlay(
-    const int *restrict src,
-    const int *restrict dst,
-    int *restrict out
+void cc_color_blend_overlay2(
+    const uint8_t *restrict src,
+    const uint8_t *restrict dst,
+    uint8_t *restrict out
 ) {
-    // a * src + (1 -a) * dst
-    for (int i = 0; i < 3; ++i)
+    int16_t a = src[3];
+    // a * src + (1 - a) * dst
+    for (size_t i = 0; i < 3; ++i)
     {
-        out[i] = dst[i] + (((src[i] - dst[i]) * src[3]) >> 8);
+        out[i] = (uint8_t)(fixed_mul_255(255 - a, dst[i]) + fixed_mul_255(src[i], a));
     }
     out[3] = 0xFF;
 }
 
+
 static inline
-void cc_color_blend_invert(
-    const int *restrict src,
-    const int *restrict dst,
-    int *restrict out)
+void cc_color_blend_invert2(
+    const uint8_t *restrict src,
+    const uint8_t *restrict dst,
+    uint8_t *restrict out)
 {
-    int inverted[3];
-    int alpha = src[3];
-    // invert colors
-    for (int i = 0; i < 3; ++i) inverted[i] = 255 - dst[i];
-    for (int i = 0; i < 3; ++i)
+    // invert colors: src = 1-dst
+    // a * src + (1 - a) * dst
+    // a * (1 - dst) + (1 - a) * dst
+    // a - a * dst + dst - a * dst
+    int16_t a = src[3];
+
+    for (size_t i = 0; i < 3; ++i)
     {
-        out[i] = ((alpha + 1) * inverted[i] + (256 - alpha) * dst[i]) >> 8;
+        out[i] = (uint8_t)((int16_t)dst[i] + (int16_t)a - 2 * fixed_mul_255(dst[i], a));
     }
-    out[3] = 0xFF;
+    out[3] = dst[3];
 }
 
 static inline
-void cc_color_blend_multiply(
-    const int *restrict src,
-    const int *restrict dst,
-    int *restrict out
+void cc_color_blend_multiply2(
+    const uint8_t *restrict src,
+    const uint8_t *restrict dst,
+    uint8_t *restrict out
 ) {
-    // a * src + (1 -a) * dst
-    for (int i = 0; i < 4; ++i)
-        out[i] = ((src[i] + 1) * dst[i]) >> 8;
+    // src[i] * dst[i]
+    for (size_t i = 0; i < 4; ++i)
+    {
+        out[i] = (uint8_t)fixed_mul_255(dst[i], src[i]);
+    }
 }
+
+static inline
+CcPixel cc_color_blend_overlay(
+    CcPixel src,
+    CcPixel dst
+) {
+    uint8_t src_comps[4];
+    uint8_t dst_comps[4];
+    uint8_t out_comps[4];
+    cc_color_unpack(src, src_comps);
+    cc_color_unpack(dst, dst_comps);
+    cc_color_blend_overlay2(src_comps, dst_comps, out_comps);
+    return cc_color_pack(out_comps);
+}
+
+static inline
+CcPixel cc_color_blend_invert(
+    CcPixel src,
+    CcPixel dst
+) {
+    uint8_t src_comps[4];
+    uint8_t dst_comps[4];
+    uint8_t out_comps[4];
+    cc_color_unpack(src, src_comps);
+    cc_color_unpack(dst, dst_comps);
+    cc_color_blend_invert2(src_comps, dst_comps, out_comps);
+    return cc_color_pack(out_comps);
+}
+
+static inline
+CcPixel cc_color_blend_multiply(
+    CcPixel src,
+    CcPixel dst
+) {
+    uint8_t src_comps[4];
+    uint8_t dst_comps[4];
+    uint8_t out_comps[4];
+    cc_color_unpack(src, src_comps);
+    cc_color_unpack(dst, dst_comps);
+    cc_color_blend_multiply2(src_comps, dst_comps, out_comps);
+    return cc_color_pack(out_comps);
+}
+
+static inline
+CcPixel cc_color_blend_full(
+    CcPixel src,
+    CcPixel dst
+) {
+    uint8_t src_comps[4];
+    uint8_t dst_comps[4];
+    uint8_t out_comps[4];
+    cc_color_unpack(src, src_comps);
+    cc_color_unpack(dst, dst_comps);
+    cc_color_blend_full2(src_comps, dst_comps, out_comps);
+    return cc_color_pack(out_comps);
+}
+
+
 
 void color_blending_test();
 

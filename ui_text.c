@@ -30,9 +30,7 @@ static void update_text_(Widget widget, XtPointer client_data, XtPointer call_da
 
     const wchar_t* text = XmTextGetStringWcs(widget);
 
-    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
-    cc_layer_set_text(overlay, text);
-
+    cc_text_set_string(&ctx->text, text);
     ui_refresh_drawing(0);
 }
 
@@ -43,9 +41,8 @@ static void update_font_size_(Widget widget, XtPointer client_data, XtPointer ca
 
     XmSpinBoxCallbackStruct* cbs = (XmSpinBoxCallbackStruct*)call_data;
 
-    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
-    overlay->font_size = cbs->position;
-    cc_layer_render(overlay);
+    ctx->text.font_size = cbs->position;
+    ctx->text.dirty = 1;
 
     ui_refresh_drawing(0);
 }
@@ -57,9 +54,9 @@ static void update_font_(Widget widget,  XtPointer client_data, XtPointer call_d
 
     XmComboBoxCallbackStruct* cbs = (XmComboBoxCallbackStruct *)call_data;
 
-    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
-    paint_set_font(ctx, overlay, cbs->item_position);
-    cc_layer_render(overlay);
+    ctx->text.font = cbs->item_position;
+    ctx->text.dirty = 1;
+
     ui_refresh_drawing(0);
 }
 
@@ -85,9 +82,8 @@ static void update_font_alignment_(Widget widget,  XtPointer client_data, XtPoin
             break;
     }
 
-    CcLayer* overlay = ctx->layers + LAYER_OVERLAY;
-    overlay->font_align = align;
-    cc_layer_render(overlay);
+    ctx->text.font_align = align;
+    ctx->text.dirty = 1;
     ui_refresh_drawing(0);
 }
 
@@ -148,7 +144,7 @@ static Widget setup_text_window_(Widget parent)
         n = 0;
         XtSetArg(args[n], XmNitems, xms); ++n;
         XtSetArg(args[n], XmNitemCount, font_count); ++n;
-        XtSetArg(args[n], XmNselectedPosition, overlay->font); ++n;
+        XtSetArg(args[n], XmNselectedPosition, ctx->text.font); ++n;
 
         Widget font = XmCreateDropDownComboBox(x_row, "font", args, n);
         XtAddCallback(font, XmNselectionCallback, update_font_, 0);
@@ -167,7 +163,7 @@ static Widget setup_text_window_(Widget parent)
                 XmNpositionType, XmPOSITION_VALUE,
                 XmNminimumValue, 2,
                 XmNmaximumValue, 120,
-                XmNposition, overlay->font_size,
+                XmNposition, ctx->text.font_size,
                 XmNeditable, 1,
                 NULL);
 
@@ -182,7 +178,7 @@ static Widget setup_text_window_(Widget parent)
         };
 
         int selected_alignment = 0;
-        switch (overlay->font_align)
+        switch (ctx->text.font_align)
         {
             case TEXT_ALIGN_CENTER:
                 selected_alignment = 1;
@@ -242,7 +238,7 @@ Widget ui_start_editing_text(void)
         g_window = setup_text_window_(g_main_w);
     }
     Widget text = XtNameToWidget(g_window, "*text_area");
-    wchar_t* current_text = ctx->layers[LAYER_OVERLAY].text;
+    wchar_t* current_text = ctx->text.text;
     XmTextSetStringWcs(text, current_text == NULL ? L"" : current_text);
 
     XtVaSetValues(text, XmNeditable, 1, NULL);

@@ -19,9 +19,7 @@
 
 
 #include <X11/Xlib.h>
-#include "config.h"
-
-#include <assert.h>
+#include "common.h"
 
 #include <Xm/Xm.h>
 #include <Xm/RowColumn.h>

@@ -17,27 +17,10 @@
 #ifndef PLANE_H
 #define PLANE_H
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#include "common.h"
 #include <math.h>
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
-#define SWAP(x_, y_, T) do { T SWAP = x_; x_ = y_; y_ = SWAP; } while (0)
-
-static inline
-int sign_of_int(int x) {
-    return (x > 0) - (x < 0);
-}
-
-
 unsigned int isqrt( unsigned int y );
-
-#ifndef M_PI
-#    define M_PI 3.14159265358979323846
-#endif
 
 typedef struct
 {

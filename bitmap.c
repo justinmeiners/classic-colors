@@ -17,85 +17,103 @@
 #include <assert.h>
 #include "bitmap.h"
 
-void cc_bitmap_clear(CcBitmap* b, uint32_t color)
+void cc_gray_bitmap_alloc(CcGrayBitmap* b)
+{
+    assert(b->w >= 0);
+    assert(b->h >= 0);
+
+    b->stride = ALIGN_UP(sizeof(char) * b->w, 8);
+
+    assert(b->stride >= b->w);
+    b->data = malloc(b->h * b->stride);
+}
+
+void cc_gray_bitmap_free(CcGrayBitmap *b)
+{
+    free(b->data);
+    b->data = NULL;
+}
+
+static
+void fill_(char *bytes, CcDim w, CcDim h, size_t stride, CcPixel x)
+{
+    while (h) {
+        CcPixel *data = (CcPixel *)bytes;
+        for (size_t col = 0; col < w; ++col) {
+            data[col] = x;
+        }
+        bytes += stride;
+        --h;
+    }
+}
+
+void cc_bitmap_clear(CcBitmap* b, CcPixel color)
 {
     size_t N = b->w * b->h;
-
-    uint32_t *data = b->data;
 
     switch (color)
     {
     case 0:
-        memset(data, 0, sizeof(uint32_t) * N);
+        memset(b->data, 0, sizeof(CcPixel) * N);
         break;
     case 0xFFFFFFFF:
-        memset(data, 0xFF, sizeof(uint32_t) * N);
+        memset(b->data, 0xFF, sizeof(CcPixel) * N);
         break;
     default:
-        for (size_t i = 0; i < N; ++i) data[i] = color;
+        fill_((char *)b->data, b->w, b->h, b->w * sizeof(CcPixel), color);
         break;
     }
 }
 
-CcBitmap* cc_bitmap_create(int w, int h)
+void cc_bitmap_alloc(CcBitmap* b)
 {
-    assert(w >= 0);
-    assert(h >= 0);
-
-    CcBitmap* b = malloc(sizeof(CcBitmap));
-    b->w = w;
-    b->h = h;
-    b->data = malloc(w * h * sizeof(uint32_t));
-    return b;
+    assert(b->w >= 0);
+    assert(b->h >= 0);
+    b->data = malloc(b->w * b->h * sizeof(CcPixel));
 }
 
-void cc_bitmap_destroy(CcBitmap* b)
+void cc_bitmap_free(CcBitmap* b)
 {
     free(b->data);
-    free(b);
+    b->data = NULL;
 }
 
-CcBitmap* cc_bitmap_create_copy(const CcBitmap* b)
+void cc_bitmap_copy(const CcBitmap *src, CcBitmap *dst)
 {
-    CcBitmap* n = cc_bitmap_create(b->w, b->h);
-    memcpy(n->data, b->data, sizeof(uint32_t) * b->w * b->h);
-    return n;
+    assert(src->w == dst->w);
+    assert(src->h == dst->h);
+    cc_bitmap_blit_unsafe(src, dst, 0, 0, 0, 0, src->w, src->h, COLOR_BLEND_REPLACE);
 }
 
-void cc_bitmap_copy_buffer(CcBitmap* b, unsigned char* rgba_buffer)
-{
-    uint32_t *data = b->data;
-
-    size_t n = b->w * b->h;
-    for (size_t i = 0; i < n; ++i)
+static inline
+void interleave_channel_(
+        const char * restrict src,
+        char * restrict dst,
+        size_t src_stride,
+        size_t dst_stride,
+        int w,
+        int h
+        ) {
+    while (h)
     {
-        int comps[4];
-        for (int j = 0; j < 4; ++j)
-        {
-            comps[j] = rgba_buffer[i * 4 + j];
+        for (size_t col = 0; col < w; ++col) {
+            dst[col * sizeof(CcPixel)] = src[col];
         }
-        data[i] = cc_color_pack(comps);
+        src += src_stride;
+        dst += dst_stride;
+        --h;
     }
 }
 
-void cc_bitmap_copy_mask(CcBitmap* b, const unsigned char* mask_buffer, uint32_t color)
+void cc_bitmap_copy_channel(CcBitmap* b, size_t channel_index, const CcGrayBitmap *channel)
 {
-    int comps[4];
-    cc_color_unpack(color, comps);
-
-    uint32_t *data = b->data;
-
-    size_t n = b->w * b->h;
-    for (size_t i = 0; i < n; ++i)
-    {
-        comps[3] = mask_buffer[i];
-        data[i] = cc_color_pack(comps);
-    }
+    char *buffer = (char *)b->data;
+    interleave_channel_(channel->data, buffer + channel_index, channel->stride, sizeof(CcPixel) * b->w, b->w, b->h);
 }
 
-void cc_bitmap_replace(CcBitmap* b, uint32_t old_color, uint32_t new_color)
+void cc_bitmap_replace(CcBitmap* b, CcPixel old_color, CcPixel new_color)
 {
-    uint32_t *data = b->data;
+    CcPixel *data = b->data;
 
     size_t n = b->w * b->h;
     for (size_t i = 0; i < n; ++i)
@@ -104,6 +122,18 @@ void cc_bitmap_replace(CcBitmap* b, uint32_t old_color, uint32_t new_color)
             data[i] = new_color;
     }
 }
+
+void cc_bitmap_swap_channels(CcBitmap *b)
+{
+    CcPixel *data = b->data;
+
+    size_t n = b->w * b->h;
+    for (size_t i = 0; i < n; ++i)
+    {
+        data[i] = cc_color_swap(data[i]);
+    }
+}
+
 
 void cc_bitmap_blit(
         const CcBitmap* src,
@@ -145,36 +175,47 @@ void cc_bitmap_blit(
 }
 
 static inline
-void blit_patch_(
-        const CcBitmap* src,
-        CcBitmap* dst,
-        int src_x,
-        int src_y,
-        int dst_x,
-        int dst_y,
+void blit_copy_(
+        const char * restrict src,
+        char * restrict dst,
+        size_t src_stride,
+        size_t dst_stride,
+        int w,
+        int h
+        ) {
+    while (h)
+    {
+        memcpy(dst, src, w * sizeof(CcPixel));
+
+        src += src_stride;
+        dst += dst_stride;
+        --h;
+    }
+}
+
+static inline
+void blit_blend_(
+        const char * restrict src,
+        char * restrict dst,
+        size_t src_stride,
+        size_t dst_stride,
         int w,
         int h,
-        void (*blend)(const int*, const int*, int*)
+        CcPixel (*blend)(CcPixel, CcPixel)
         ) {
-    int src_comps[4];
-    int dst_comps[4];
-    int out_comps[4];
 
-    const uint32_t *restrict in = src->data;
-    uint32_t *restrict out = dst->data;
-
-    for (int y = 0; y < h; ++y)
+    while (h)
     {
+        const CcPixel *src_data = (CcPixel *)src;
+        CcPixel *dst_data = (CcPixel *)dst;
+
         for (int x = 0; x < w; ++x)
         {
-            int src_index = (src_x + x) + (src_y + y) * src->w;
-            int dst_index = (dst_x + x) + (dst_y + y) * dst->w;
-
-            cc_color_unpack(in[src_index], src_comps);
-            cc_color_unpack(out[dst_index], dst_comps);
-            blend(src_comps, dst_comps, out_comps);
-            out[dst_index] = cc_color_pack(out_comps);
+            dst_data[x] = blend(src_data[x], dst_data[x]);
         }
+        src += src_stride;
+        dst += dst_stride;
+        --h;
     }
 }
 
@@ -193,32 +234,27 @@ void cc_bitmap_blit_unsafe(
     assert(src_x + w <= src->w);
     assert(src_y + h <= src->h);
 
+    char *src_bytes = cc_bitmap_bytes_at(src, src_x, src_y);
+    char *dst_bytes = cc_bitmap_bytes_at(dst, dst_x, dst_y);
+    size_t src_stride = src->w * sizeof(CcPixel);
+    size_t dst_stride = dst->w * sizeof(CcPixel);
+
     switch (blend)
     {
         case COLOR_BLEND_REPLACE:
-        {
-            const uint32_t *restrict in = src->data + src_x + src_y * src->w;
-            uint32_t *restrict out = dst->data + dst_x + dst_y * dst->w;
-            
-            for (int y = 0; y < h; ++y)
-            {
-                memcpy(out, in, w * sizeof(uint32_t));
-                in += src->w;
-                out += dst->w;
-            }
+            blit_copy_(src_bytes, dst_bytes, src_stride, dst_stride, w, h);
             break;
-        }
         case COLOR_BLEND_OVERLAY:
-            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_overlay);
+            blit_blend_(src_bytes, dst_bytes, src_stride, dst_stride, w, h, cc_color_blend_overlay);
             break;
         case COLOR_BLEND_FULL:
-            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_full);
+            blit_blend_(src_bytes, dst_bytes, src_stride, dst_stride, w, h, cc_color_blend_full);
             break;
         case COLOR_BLEND_INVERT:
-            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_invert);
+            blit_blend_(src_bytes, dst_bytes, src_stride, dst_stride, w, h, cc_color_blend_invert);
             break;
         case COLOR_BLEND_MULTIPLY:
-            blit_patch_(src, dst, src_x, src_y, dst_x, dst_y, w, h, cc_color_blend_multiply);
+            blit_blend_(src_bytes, dst_bytes, src_stride, dst_stride, w, h, cc_color_blend_multiply);
             break;
     }
 }
@@ -231,8 +267,8 @@ void interp_linear_(
         int x2,
         int y2,
         int width,
-        uint32_t color,
-        void (*draw_part)(CcBitmap* b, int x, int y, int w, uint32_t c, void* ctx),
+        CcPixel color,
+        void (*draw_part)(CcBitmap* b, int x, int y, int w, CcPixel c, void* ctx),
         void* ctx
         ) {
     int m, x, y, sx, ex, sy, ey, index;
@@ -311,14 +347,14 @@ void interp_linear_(
     }
 }
 
-void cc_bitmap_draw_spray(CcBitmap* b, int cx, int cy, int r, int density, uint32_t color)
+void cc_bitmap_draw_spray(CcBitmap* b, int cx, int cy, int r, int density, CcPixel color)
 {
     CcRect rect = {
         cx - r, cy - r, 2 * r, 2 * r
     };
     cc_rect_intersect(rect, cc_bitmap_rect(b), &rect);
 
-    uint32_t *data = b->data;
+    CcPixel *data = b->data;
 
     for (int y = rect.y; y < rect.y + rect.h; ++y)
     {
@@ -336,14 +372,14 @@ void cc_bitmap_draw_spray(CcBitmap* b, int cx, int cy, int r, int density, uint3
     }
 }
 
-void cc_bitmap_draw_circle(CcBitmap* b, int cx, int cy, int r, uint32_t color)
+void cc_bitmap_draw_circle(CcBitmap* b, int cx, int cy, int r, CcPixel color)
 {
     CcRect rect = {
         cx - r, cy - r, 2 * r, 2 * r
     };
     cc_rect_intersect(rect, cc_bitmap_rect(b), &rect);
 
-    uint32_t *data = b->data;
+    CcPixel *data = b->data;
     for (int y = rect.y; y < rect.y + rect.h; ++y)
     {
         for (int x = rect.x; x < rect.x + rect.w; ++x)
@@ -357,14 +393,14 @@ void cc_bitmap_draw_circle(CcBitmap* b, int cx, int cy, int r, uint32_t color)
     }
 }
 
-void cc_bitmap_draw_square(CcBitmap* b, int cx, int cy, int d, uint32_t color)
+void cc_bitmap_draw_square(CcBitmap* b, int cx, int cy, int d, CcPixel color)
 {
     CcRect rect = {
         cx - d / 2, cy - d / 2, d, d
     };
     cc_rect_intersect(rect, cc_bitmap_rect(b), &rect);
 
-    uint32_t *data = b->data;
+    CcPixel *data = b->data;
     for (int y = 0; y < rect.h; ++y)
     {
         for (int x = 0; x < rect.w; ++x)
@@ -375,37 +411,37 @@ void cc_bitmap_draw_square(CcBitmap* b, int cx, int cy, int d, uint32_t color)
 }
 
 static inline
-void interp_square_helper_(CcBitmap* b, int x, int y, int d, uint32_t c, void* ctx) {
+void interp_square_helper_(CcBitmap* b, int x, int y, int d, CcPixel c, void* ctx) {
     cc_bitmap_draw_square(b, x, y, d, c);
 }
    
-void cc_bitmap_interp_square(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
+void cc_bitmap_interp_square(CcBitmap* b, int x1, int y1, int x2, int y2, int width, CcPixel color)
 {
     interp_linear_(b, x1, y1, x2, y2, width, color, interp_square_helper_, NULL);
 }
 
 
 static inline
-void interp_circle_helper_(CcBitmap* b, int x, int y, int w, uint32_t c, void* ctx) {
+void interp_circle_helper_(CcBitmap* b, int x, int y, int w, CcPixel c, void* ctx) {
     cc_bitmap_draw_circle(b, x, y, w, c);
 }
  
-void cc_bitmap_interp_circle(CcBitmap* b, int x1, int y1, int x2, int y2, int radius, uint32_t color)
+void cc_bitmap_interp_circle(CcBitmap* b, int x1, int y1, int x2, int y2, int radius, CcPixel color)
 {
     interp_linear_(b, x1, y1, x2, y2, radius, color, interp_circle_helper_, NULL);
 }
 
 static inline
-void interp_dotted_horiz_(CcBitmap* b, int x, int y, int r, uint32_t color, void* ctx) {
+void interp_dotted_horiz_(CcBitmap* b, int x, int y, int r, CcPixel color, void* ctx) {
     if (x % 8 < 4) cc_bitmap_set(b, x, y, color);
 }
 
 static inline
-void interp_dotted_vert_(CcBitmap* b, int x, int y, int r, uint32_t color, void* ctx) {
+void interp_dotted_vert_(CcBitmap* b, int x, int y, int r, CcPixel color, void* ctx) {
     if (y % 8 < 4) cc_bitmap_set(b, x, y, color);
 }
 
-void cc_bitmap_interp_dotted(CcBitmap* b, int x1, int y1, int x2, int y2, uint32_t color)
+void cc_bitmap_interp_dotted(CcBitmap* b, int x1, int y1, int x2, int y2, CcPixel color)
 {
     if (abs(x2 - x1) > abs(y2 - y1))
     {
@@ -417,7 +453,7 @@ void cc_bitmap_interp_dotted(CcBitmap* b, int x1, int y1, int x2, int y2, uint32
     }
 }
 
-void cc_bitmap_dotted_rect(CcBitmap* b, int x1, int y1, int x2, int y2, uint32_t color)
+void cc_bitmap_dotted_rect(CcBitmap* b, int x1, int y1, int x2, int y2, CcPixel color)
 {
     cc_bitmap_interp_dotted(b, x1, y1, x2, y1, color);
     cc_bitmap_interp_dotted(b, x2, y1, x2, y2, color);
@@ -425,7 +461,7 @@ void cc_bitmap_dotted_rect(CcBitmap* b, int x1, int y1, int x2, int y2, uint32_t
     cc_bitmap_interp_dotted(b, x1, y2, x1, y1, color);
 }
 
-void cc_bitmap_fill_rect(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color)
+void cc_bitmap_fill_rect(CcBitmap* dst, int x1, int y1, int x2, int y2, CcPixel color)
 {
     if (x2 < x1) {
         SWAP(x1, x2, int);
@@ -441,7 +477,7 @@ void cc_bitmap_fill_rect(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t
     CcRect to_fill;
     cc_rect_intersect(r, cc_bitmap_rect(dst), &to_fill);
 
-    uint32_t *data = dst->data;
+    CcPixel *data = dst->data;
 
     for (int y = 0; y < to_fill.h; ++y)
     {
@@ -453,7 +489,7 @@ void cc_bitmap_fill_rect(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t
     }
 }
 
-void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x0, int y0, int x1, int y1, uint32_t color)
+void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x0, int y0, int x1, int y1, CcPixel color)
 {
     // I tried inventing my own implementation.. but it sucked.
     // http://members.chello.at/~easyfilter/bresenham.html
@@ -500,7 +536,7 @@ void cc_bitmap_stroke_ellipse(CcBitmap* dst, int x0, int y0, int x1, int y1, uin
 #undef PUT
 }
 
-void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint32_t color)
+void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, CcPixel color)
 {
     CcRect rect = cc_rect_around_corners(x1, y1, x2, y2);
     if (rect.w < 2 || rect.h < 2) return;
@@ -513,7 +549,7 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
 
     if (!cc_rect_intersect(rect, cc_bitmap_rect(dst), &rect)) return;
 
-    uint32_t *data = dst->data;
+    CcPixel *data = dst->data;
 
     for (int row = 0; row < rect.h; ++row)
     {
@@ -540,7 +576,7 @@ void cc_bitmap_fill_ellipse(CcBitmap* dst, int x1, int y1, int x2, int y2, uint3
     }
 }
 
-void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int width, uint32_t color)
+void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int width, CcPixel color)
 {
     cc_bitmap_interp_square(b, x1, y1, x2, y1, width, color);
     cc_bitmap_interp_square(b, x2, y1, x2, y2, width, color);
@@ -548,7 +584,7 @@ void cc_bitmap_stroke_rect(CcBitmap* b, int x1, int y1, int x2, int y2, int widt
     cc_bitmap_interp_square(b, x1, y2, x1, y1, width, color);
 }
 
-CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
+CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, CcPixel new_color)
 {
     /* stack safe verison of:
     cc_bitmap_flood_fill_r(b, x - 1, y, old_color, new_color);
@@ -557,7 +593,7 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
     cc_bitmap_flood_fill_r(b, x, y + 1, old_color, new_color);
     */
 
-    uint32_t *data = b->data;
+    CcPixel *data = b->data;
     int W = b->w;
     int H = b->h;
 
@@ -566,7 +602,7 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
         return (CcRect) { 0, 0, 0, 0 };
     }
 
-    uint32_t old_color = data[sx + sy * W];
+    CcPixel old_color = data[sx + sy * W];
     if (old_color == new_color)
     {
         return (CcRect) { 0, 0, 0, 0 };
@@ -642,19 +678,13 @@ CcRect cc_bitmap_flood_fill(CcBitmap* b, int sx, int sy, uint32_t new_color)
 
 void cc_bitmap_invert_colors(CcBitmap* b)
 {
-    uint32_t *data = b->data;
+    CcPixel *data = b->data;
 
     size_t N = b->w * b->h;
 
     for (size_t i = 0; i < N; ++i)
     {
-        uint32_t color = data[i];
-
-        int comps[4];
-        comps[3] = cc_color_component(color, 3);
-        for (int j = 0; j < 3; ++j)
-            comps[j] = 255 - cc_color_component(color, j);
-        data[i] = cc_color_pack(comps);
+        data[i] = cc_color_blend_invert(COLOR_WHITE, data[i]);
     }
 }
 
@@ -671,8 +701,8 @@ void cc_bitmap_rotate_90(const CcBitmap* src, CcBitmap* dst)
 
 void cc_bitmap_flip_horiz(const CcBitmap* src, CcBitmap* dst)
 {
-    const uint32_t * restrict in = src->data;
-    uint32_t * restrict out = dst->data;
+    const CcPixel * restrict in = src->data;
+    CcPixel * restrict out = dst->data;
 
     for (int y = 0; y < src->h; ++y)
     {
@@ -686,8 +716,8 @@ void cc_bitmap_flip_horiz(const CcBitmap* src, CcBitmap* dst)
 
 void cc_bitmap_flip_vert(const CcBitmap* src, CcBitmap* dst)
 {
-    const uint32_t * restrict in = src->data;
-    uint32_t * restrict out = dst->data;
+    const CcPixel * restrict in = src->data;
+    CcPixel * restrict out = dst->data;
 
     for (int y = 0; y < src->h; ++y)
     {
@@ -726,8 +756,8 @@ void cc_bitmap_zoom(const CcBitmap* src, CcBitmap* dst, int zoom)
 
 void cc_bitmap_zoom_general(const CcBitmap* src, CcBitmap* dst, int zoom)
 {
-    const uint32_t * restrict in = src->data;
-    uint32_t * restrict out = dst->data;
+    const CcPixel * restrict in = src->data;
+    CcPixel * restrict out = dst->data;
 
     for (int y = 0; y < dst->h; ++y)
     {
@@ -743,8 +773,8 @@ void cc_bitmap_zoom_general(const CcBitmap* src, CcBitmap* dst, int zoom)
 
 void cc_bitmap_zoom_power_of_2(const CcBitmap* src, CcBitmap* dst, int zoom_power)
 {
-    const uint32_t *restrict in = src->data;
-    uint32_t *restrict out = dst->data;
+    const CcPixel *restrict in = src->data;
+    CcPixel *restrict out = dst->data;
 
     for (int y = 0; y < dst->h; ++y)
     {

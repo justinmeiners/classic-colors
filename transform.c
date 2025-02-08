@@ -39,7 +39,7 @@ CcTransform cc_transform_concat(CcTransform a, CcTransform b)
     return t;
 }
 
-CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A, uint32_t bg_color)
+CcBitmap cc_bitmap_transform(const CcBitmap* src, CcTransform A, uint32_t bg_color)
 {
     double epsilon = 0.0001;
     Vec2 corners[4];
@@ -75,15 +75,14 @@ CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A,
     max.x = ceil(max.x);
     max.y = ceil(max.y);
 
-    int w = (int)(max.x - min.x);
-    int h = (int)(max.y - min.y);
+    CcBitmap dst = {
+        .w = (int)(max.x - min.x),
+        .h = (int)(max.y - min.y)
+    };
 
-    if (!dst)
-    {
-        dst = cc_bitmap_create(w, h);
-    }
+    cc_bitmap_alloc(&dst);
 
-    uint32_t *restrict out = dst->data;
+    uint32_t *restrict out = dst.data;
 
     // A: R^n -> R^m
     // Iterate each pixel in the destination
@@ -92,14 +91,13 @@ CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A,
 
     // center pixels
 
-    for (int y = 0; y < h; ++y)
+    for (int y = 0; y < dst.h; ++y)
     {
-        for (int x = 0; x < w; ++x)
+        for (int x = 0; x < dst.w; ++x)
         {
             Vec2 image;
             image.x = min.x + (double)x + 0.5;
             image.y = min.y + (double)y + 0.5;
-
 
             // I explored adding the derivative instead of transforming each time.
             // but, lots of small additions accumlate error and this isn't a big deal for a 2x2 matrix.

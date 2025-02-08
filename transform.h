@@ -82,7 +82,7 @@ CcTransform cc_transform_inverse(CcTransform t);
 CcTransform cc_transform_skew(double x_angle, double y_angle);
 CcTransform cc_transform_concat(CcTransform a, CcTransform b);
 
-CcBitmap* cc_bitmap_transform(const CcBitmap* src, CcBitmap* dst, CcTransform A, uint32_t bg_color);
+CcBitmap cc_bitmap_transform(const CcBitmap* src, CcTransform A, uint32_t bg_color);
 
 #endif
 

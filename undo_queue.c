@@ -16,13 +16,14 @@ static UndoPatch* find_last_full_(UndoPatch* it, UndoPatch* last)
     return last_full;
 }
 
-static CcBitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
+static
+CcBitmap undo_replay_(UndoPatch* first_full, UndoPatch* last)
 {
     assert(first_full != last && first_full->full_image);
 
     // make a copy of the full image:
-    CcBitmap* new_canvas = cc_bitmap_decompress(first_full->data, first_full->data_size); 
-    if (DEBUG_LOG) printf("replaying at checkpint: %d %d\n", new_canvas->w, new_canvas->h);
+    CcBitmap new_canvas = cc_bitmap_decompress(first_full->data, first_full->data_size);
+    if (DEBUG_LOG) printf("replaying at checkpint: %d %d\n", new_canvas.w, new_canvas.h);
 
     UndoPatch* it = first_full->next;
 
@@ -30,8 +31,8 @@ static CcBitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
     while (it != last)
     {
         // fix up the last undo
-        CcBitmap* to_blit = cc_bitmap_decompress(it->data, it->data_size); 
-        assert(to_blit->w == it->rect.w && to_blit->h == it->rect.h);
+        CcBitmap to_blit = cc_bitmap_decompress(it->data, it->data_size);
+        assert(to_blit.w == it->rect.w && to_blit.h == it->rect.h);
 
         if (DEBUG_LOG)
         {
@@ -42,14 +43,14 @@ static CcBitmap* undo_replay_(UndoPatch* first_full, UndoPatch* last)
         }
 
         cc_bitmap_blit_unsafe(
-                to_blit,
-                new_canvas,
+                &to_blit,
+                &new_canvas,
                 0, 0,
                 it->rect.x, it->rect.y,
                 it->rect.w, it->rect.h,
                 COLOR_BLEND_REPLACE
                 );
-        cc_bitmap_destroy(to_blit);
+        cc_bitmap_free(&to_blit);
         it = it->next;
     }
 
@@ -90,10 +91,14 @@ UndoPatch* undo_patch_create(const CcBitmap* src, CcRect r)
     {
         patch->full_image = 0;
 
-        CcBitmap* b = cc_bitmap_create(r.w, r.h);
-        cc_bitmap_blit_unsafe(src, b, r.x, r.y, 0, 0, r.w, r.h, COLOR_BLEND_REPLACE);
-        patch->data = cc_bitmap_compress(b, &patch->data_size);
-        cc_bitmap_destroy(b);
+        CcBitmap b = {
+            .w = r.w,
+            .h = r.h
+        };
+        cc_bitmap_alloc(&b);
+        cc_bitmap_blit_unsafe(src, &b, r.x, r.y, 0, 0, r.w, r.h, COLOR_BLEND_REPLACE);
+        patch->data = cc_bitmap_compress(&b, &patch->data_size);
+        cc_bitmap_free(&b);
     }
     return patch;
 }
@@ -156,8 +161,10 @@ void cc_undo_queue_trim(CcUndoQueue* q, int max_undos)
     // first is always full
     assert(last_full);
 
-    CcBitmap* new_canvas = undo_replay_(last_full, end);
-    UndoPatch* new_patch = undo_patch_create(new_canvas, cc_bitmap_rect(new_canvas));
+    CcBitmap new_canvas = undo_replay_(last_full, end);
+    UndoPatch* new_patch = undo_patch_create(&new_canvas, cc_bitmap_rect(&new_canvas));
+    cc_bitmap_free(&new_canvas);
+
     assert(new_patch->full_image);
     new_patch->next = end;
 
@@ -210,8 +217,8 @@ void cc_undo_queue_undo(CcUndoQueue* q, CcLayer* target)
     assert(last_full);
     assert(last_full->next);
 
-    CcBitmap* new_canvas = undo_replay_(last_full, q->last_undo);
-    cc_layer_set_bitmap(target, new_canvas);
+    CcBitmap new_canvas = undo_replay_(last_full, q->last_undo);
+    cc_layer_set_bitmap(target, &new_canvas);
 
     // one more thing.. we need to move "last_undo" back one
     UndoPatch* it = last_full;
@@ -231,22 +238,22 @@ void cc_undo_queue_redo(CcUndoQueue* q, CcLayer* target)
     }
 
     UndoPatch* it = q->last_undo->next;
-    CcBitmap* to_blit = cc_bitmap_decompress(it->data, it->data_size);
+    CcBitmap to_blit = cc_bitmap_decompress(it->data, it->data_size);
     if (it->full_image)
     {
-        cc_layer_set_bitmap(target, to_blit);
+        cc_layer_set_bitmap(target, &to_blit);
     }
     else
     {
         cc_bitmap_blit_unsafe(
-                to_blit,
-                target->bitmaps,
+                &to_blit,
+                &target->bitmap,
                 0, 0,
                 it->rect.x, it->rect.y,
                 it->rect.w, it->rect.h,
                 COLOR_BLEND_REPLACE
                 );
-        cc_bitmap_destroy(to_blit);
+        cc_bitmap_free(&to_blit);
     }
 
     q->last_undo = it;

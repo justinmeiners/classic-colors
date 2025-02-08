@@ -25,41 +25,34 @@ int g_edit_fg = 0;
 char* rgb_txt_path = NULL;
 
 
-#define COLOR_NAME_MAX 10
+#define XCOLOR_NAME_MAX (4 + 6 + 4)
 
+// https://tronche.com/gui/x/xlib/color/structures.html
 static
-uint32_t xcolor_to_color(const XColor* c)
+CcPixel xcolor_to_color_(XColor c)
 {
-    int comps[] = {
-        c->red ,
-        c->green,
-        c->blue,
-        65535
+    int32_t comps_16[] = {
+        c.red,
+        c.green,
+        c.blue,
+        UINT16_MAX
     };
 
+    uint8_t comps_8[4];
     for (int i = 0; i < 4; ++i)
     {
-        comps[i] = (comps[i] * 256) / 65536;
+        comps_8[i] = (comps_16[i] * 255) / UINT16_MAX;
     }
-    return cc_color_pack(comps);
+    return cc_color_pack(comps_8);
 }
 
-
 static
-void format_color_hex_string(char* out, uint32_t color)
+void color_to_xname_(char* out, CcPixel color)
 {
-    int comp[4];
+    uint8_t comp[4];
     cc_color_unpack(color, comp);
-    snprintf(out, COLOR_NAME_MAX, "#%02X%02X%02X", comp[0], comp[1], comp[2]);
+    snprintf(out, XCOLOR_NAME_MAX, "rgb:%02X/%02X/%02X", comp[0], comp[1], comp[2]);
 }
-
-/*
-static
-uint32_t parse_color_string(const char* str)
-{
-    return (((uint32_t)strtol(str + 1, NULL, 16)) << 8) | 0x000000FF;
-}
-*/
 
 static
 int find_rgb_txt_path(char* buffer, size_t max)
@@ -89,7 +82,7 @@ int find_rgb_txt_path(char* buffer, size_t max)
     return 0;
 }
 
-void ui_set_color(Widget window, uint32_t color, int fg)
+void ui_set_color(Widget window, CcPixel color, int fg)
 {
     int n = 0;
     Arg args[UI_ARGS_MAX];
@@ -102,8 +95,8 @@ void ui_set_color(Widget window, uint32_t color, int fg)
     Display* display = XtDisplay(window);
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
 
-    char name[COLOR_NAME_MAX];
-    format_color_hex_string(name, color);
+    char name[XCOLOR_NAME_MAX];
+    color_to_xname_(name, color);
 
     // ParseColor is always RED GREEN BLUE
     // https://linux.die.net/man/3/xparsecolor
@@ -117,8 +110,8 @@ void ui_set_color(Widget window, uint32_t color, int fg)
 
     if (g_color_picker && fg == g_edit_fg)
     {
-        char color_name[COLOR_NAME_MAX];
-        format_color_hex_string(color_name, color);
+        char color_name[XCOLOR_NAME_MAX];
+        color_to_xname_(color_name, color);
 
         n = 0;
         XtSetArg(args[n], XmNcolorName, color_name); n++;
@@ -151,7 +144,7 @@ static void color_picker_event_(Widget widget, XtPointer client_data, XtPointer 
 
         XColor xcolor;
         XParseColor(display, screen_colormap, color_name, &xcolor);
-        ui_set_color(g_main_w, xcolor_to_color(&xcolor), g_edit_fg);
+        ui_set_color(g_main_w, xcolor_to_color_(xcolor), g_edit_fg);
     }
     else if (cbs->reason == XmCR_CANCEL)
     {
@@ -166,7 +159,13 @@ static void color_picker_event_(Widget widget, XtPointer client_data, XtPointer 
     g_color_picker = NULL;
 }
 
-static void rgb_changed_(Widget widget, XtPointer client_data, XtPointer call_data)
+static uint8_t parse_color_component(const char *str)
+{
+    return (uint8_t)MAX(MIN(atoi(str), 255), 0);
+}
+
+static
+void rgb_changed_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     if (!g_color_picker) return;
 
@@ -177,23 +176,20 @@ static void rgb_changed_(Widget widget, XtPointer client_data, XtPointer call_da
     Widget green = XtNameToWidget(g_color_picker, "*green");
     Widget blue = XtNameToWidget(g_color_picker, "*blue");
 
-    int comps[4];
-    comps[3] = 255;
-
     char* red_str = XmTextFieldGetString(red);
-    comps[0] = MAX(MIN(atoi(red_str), 255), 0);
-
     char* green_str = XmTextFieldGetString(green);
-    comps[1] = MAX(MIN(atoi(green_str), 255), 0);
-
     char* blue_str = XmTextFieldGetString(blue);
-    comps[2] = MAX(MIN(atoi(blue_str), 255), 0);
 
+    uint8_t comps[4] = {
+        parse_color_component(red_str),
+        parse_color_component(green_str),
+        parse_color_component(blue_str),
+        255
+    };
+    CcPixel color = cc_color_pack(comps);
 
-    uint32_t color = cc_color_pack(comps);
-
-    char name[COLOR_NAME_MAX];
-    format_color_hex_string(name, color);
+    char name[XCOLOR_NAME_MAX];
+    color_to_xname_(name, color);
     n = 0;
     XtSetArg(args[n], XmNcolorName, name); n++;
     Widget color_selector = XtNameToWidget(g_color_picker, "*color_selector");
@@ -203,7 +199,7 @@ static void rgb_changed_(Widget widget, XtPointer client_data, XtPointer call_da
 
 #define SCRATCH_MAX 1024
 
-static Widget setup_color_picker_(Widget parent, uint32_t color)
+static Widget setup_color_picker_(Widget parent, CcPixel color)
 {
     if (!rgb_txt_path)
     {
@@ -237,8 +233,8 @@ static Widget setup_color_picker_(Widget parent, uint32_t color)
     Widget split_pane = XtCreateWidget("split_pane", xmPanedWidgetClass, box, pane_args, XtNumber(pane_args));
 
 
-    char color_name[COLOR_NAME_MAX];
-    format_color_hex_string(color_name, color);
+    char color_name[XCOLOR_NAME_MAX];
+    color_to_xname_(color_name, color);
 
     n = 0;
     XtSetArg(args[n], XmNpaneMaximum, 240); ++n;
@@ -262,7 +258,7 @@ static Widget setup_color_picker_(Widget parent, uint32_t color)
 
     // extended column
     Widget rowcol_v = XmCreateRowColumn(split_pane, "row_v", NULL, 0);
-    int color_comps[4];
+    uint8_t color_comps[4];
     cc_color_unpack(color, color_comps);
 
     char scratch_buffer[SCRATCH_MAX];
@@ -321,81 +317,96 @@ static Widget setup_color_picker_(Widget parent, uint32_t color)
 
 const char* g_default_colors[] = {
     /* grays */
-    "#000000",
-    "#444444",
-    "#808080",
-    "#BBBBBB",
-    "#DDDDDD",
-    "#FFFFFF",
+    "rgb:00/00/00",
+    "rgb:44/44/44",
+    "rgb:80/80/80",
+    "rgb:BB/BB/BB",
+    "rgb:DD/DD/DD",
+    "rgb:FF/FF/FF",
 
     /* selections */
-    "#FF8080",
-    "#ECAA9F",
-    "#80FF80",
-    "#8080FF",
-    "#7C05F2",
+    "rgb:FF/80/80",
+    "rgb:EC/AA/9F",
+    "rgb:80/FF/80",
+    "rgb:80/80/FF",
+    "rgb:7C/05/F2",
 
-    "#FF6600",
-    "#705E78",
-    "#3B82BF",
-    "#B3DAF2",
-    "#F2059F",
-    "#D9C2AD",
-    "#667367",
-    "#F2CF1D",
-    "#8DA698",
-    "#CAD9A9",
+    "rgb:FF/66/00",
+    "rgb:70/5E/78",
+    "rgb:3B/82/BF",
+    "rgb:B3/DA/F2",
+    "rgb:F2/05/9F",
+    "rgb:D9/C2/AD",
+    "rgb:66/73/67",
+    "rgb:F2/CF/1D",
+    "rgb:8D/A6/98",
+    "rgb:CA/D9/A9",
 
 
 
     /* base colors*/
-    "#800000",
-    "#BB0000",
-    "#FF0000",
+    "rgb:80/00/00",
+    "rgb:BB/00/00",
+    "rgb:FF/00/00",
 
-    "#808000",
-    "#BBBB00",
-    "#FFFF00",
+    "rgb:80/80/00",
+    "rgb:BB/BB/00",
+    "rgb:FF/FF/00",
 
-    "#804000",
-    "#BB5D00",
-    "#FFC000",
+    "rgb:80/40/00",
+    "rgb:BB/5D/00",
+    "rgb:FF/C0/00",
 
-    "#008000",
-    "#00BB00",
-    "#00FF00",
+    "rgb:00/80/00",
+    "rgb:00/BB/00",
+    "rgb:00/FF/00",
 
-    "#008080",
-    "#00BBBB",
-    "#00FFFF",
+    "rgb:00/80/80",
+    "rgb:00/BB/BB",
+    "rgb:00/FF/FF",
 
-    "#000080",
-    "#0000BB",
-    "#0000FF",
+    "rgb:00/00/80",
+    "rgb:00/00/BB",
+    "rgb:00/00/FF",
 
-    "#800080",
-    "#BB00BB",
-    "#FF00FF",
-
-
+    "rgb:80/00/80",
+    "rgb:BB/00/BB",
+    "rgb:FF/00/FF",
 };
 
 enum {
     DEFAULT_COLOR_COUNT  = sizeof(g_default_colors) / sizeof(const char*),
 };
 
+static
+void test_colors_(Display *display)
+{
+    printf("testing colors\n");
+    Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
+    XColor xcolor;
+    XParseColor(display, screen_colormap, "rgb:00/FF/00", &xcolor);
+    assert(xcolor.green == UINT16_MAX);
 
-static void color_clicked_(Widget widget, void* client_data, XEvent* event, Boolean* continue_dispatch)
+    CcPixel p = xcolor_to_color_(xcolor);
+    assert(p == COLOR_GREEN);
+}
+
+
+static
+void color_clicked_(Widget widget, void* client_data, XEvent* event, Boolean* continue_dispatch)
 {
     Display* display = XtDisplay(widget);
-    Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
 
+    if (DEBUG_LOG) {
+        test_colors_(display);
+    }
+
+    Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
 
     size_t index = (size_t)client_data;
     XColor xcolor;
     XParseColor(display, screen_colormap, g_default_colors[index], &xcolor);
-
-    uint32_t color = xcolor_to_color(&xcolor);
+    CcPixel color = xcolor_to_color_(xcolor);
 
     int fg = 0;
 
@@ -428,7 +439,7 @@ static void color_swap_(Widget widget, XtPointer client_data, XtPointer call_dat
 {
     PaintContext* ctx = &g_paint_ctx;
 
-    uint32_t temp = ctx->bg_color;
+    CcPixel temp = ctx->bg_color;
     ui_set_color(g_main_w, ctx->fg_color, 0);
     ui_set_color(g_main_w, temp, 1);
 }
@@ -442,7 +453,7 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
      PaintContext* ctx = &g_paint_ctx;
      size_t index = (size_t)client_data;
 
-     uint32_t color;
+     CcPixel color;
 
      switch (index)
      {
@@ -618,7 +629,6 @@ Widget ui_setup_command_area(Widget parent)
 
     XtManageChild(all_split);
     XtManageChild(command_area);
-
 
     return command_area;
 }

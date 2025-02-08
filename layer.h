@@ -20,42 +20,22 @@
 #include <wctype.h>
 #include "bitmap.h"
 #include "transform.h"
-
-#include "config.h"
-#include "stb_truetype.h" 
-
-typedef enum
-{
-    TEXT_ALIGN_CENTER,
-    TEXT_ALIGN_LEFT,
-    TEXT_ALIGN_RIGHT
-} CcTextAlign;
-
+#include "bitmap_text.h"
 
 typedef struct
 {
-    CcBitmap* bitmaps;
+    CcBitmap bitmap;
     CcColorBlend blend;
 
     int x;
     int y;
-
-    int font;
-    stbtt_fontinfo font_info;
-
-    int font_size;
-    CcTextAlign font_align;
-    uint32_t font_color;
-
-    size_t text_buffer_size;
-    wchar_t* text;
 } CcLayer;
 
 static inline
 CcRect cc_layer_rect(const CcLayer* layer)
 {
     CcRect r = {
-        layer->x, layer->y, layer->bitmaps->w, layer->bitmaps->h
+        layer->x, layer->y, layer->bitmap.w, layer->bitmap.h
     };
     return r;
 }
@@ -63,15 +43,13 @@ CcRect cc_layer_rect(const CcLayer* layer)
 static inline
 int cc_layer_w(const CcLayer* layer)
 {
-    if (!layer->bitmaps) return 0;
-    return layer->bitmaps->w;
+    return layer->bitmap.w;
 }
 
 static inline
 int cc_layer_h(const CcLayer* layer)
 {
-    if (!layer->bitmaps) return 0;
-    return layer->bitmaps->h;
+    return layer->bitmap.h;
 }
 
 void cc_layer_init(CcLayer* layer, int x, int y);
@@ -85,23 +63,24 @@ void cc_layer_stretch(CcLayer* layer, int w, int h, int w_angle, int h_angle, ui
 void cc_layer_resize(CcLayer* layer, int new_w, int new_h, uint32_t bg_color);
 void cc_layer_ensure_size(CcLayer* layer, int w, int h);
 
-void cc_layer_set_text(CcLayer* layer, const wchar_t* text);
-void cc_layer_render(CcLayer* layer);
 
-unsigned char* cc_bitmap_compress(const CcBitmap* b, size_t* out_size);
-CcBitmap* cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed_size);
+typedef struct
+{
+    int font;
+    int cached_font_;
+    int dirty;
+    stbtt_fontinfo font_info_;
 
-void test_text_wordwrap(void);
+    int font_size;
+    CcTextAlign font_align;
+    uint32_t font_color;
 
-void cc_text_render(
-        CcBitmap* bitmap,
-        const wchar_t* text,
-        const stbtt_fontinfo* font_info,
-        int font_size,
-        CcTextAlign align,
-        uint32_t font_color
-    );
+    size_t text_buffer_size;
+    wchar_t* text;
+} CcText;
 
+void cc_text_set_string(CcText *text, const wchar_t* string);
+void cc_text_composite(CcText *text, CcLayer* layer);
 
 typedef struct
 {
@@ -154,6 +133,9 @@ CcViewport cc_viewport_zoom_centered(const CcViewport* v, int new_zoom)
 
     return out;
 }
+
+const char* paint_font_name(int index);
+int paint_font_count(void);
 
 #endif
 
