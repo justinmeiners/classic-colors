@@ -126,7 +126,6 @@ typedef enum
 #define OS_PATH_MAX 2048
 
 enum {
-    LAYER_COMPOSITE,
     LAYER_INTERMEDIATE,
 
     LAYER_MAIN,
@@ -218,7 +217,7 @@ int paint_h(const PaintContext* ctx);
 
 void paint_crop(PaintContext* ctx);
 
-void paint_composite(PaintContext* ctx);
+void paint_composite(PaintContext* ctx, CcBitmap *composite);
 
 void paint_copy(PaintContext* ctx);
 void paint_cut(PaintContext* ctx);
@@ -231,6 +230,5 @@ void paint_select_clear(PaintContext* ctx);
 
 void paint_set_color(PaintContext* ctx, uint32_t color, int fg);
 int paint_is_editing_text(PaintContext* ctx);
-
 
 #endif
