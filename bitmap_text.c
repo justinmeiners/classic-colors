@@ -5,6 +5,7 @@
 
 #include <wchar.h>
 #include <ctype.h>
+#include <wctype.h>
 
 // - Don't modify the string, just give ranges (we only take away).
 // - Every character should be printed, except:
