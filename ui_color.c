@@ -109,7 +109,11 @@ void ui_set_color(Widget window, CcPixel color, int fg)
     XAllocColor(display, screen_colormap, &xcolor);
 
     n = 0;
-    XtSetArg(args[n], XmNbackground, xcolor.pixel); n++;
+    Pixmap pixmap = XmGetPixmap(XtScreen(widget), "color_well", xcolor.pixel, xcolor.pixel);
+
+    n = 0;
+    XtSetArg(args[n], XmNlabelType, XmPIXMAP); ++n;
+    XtSetArg(args[n], XmNlabelPixmap, pixmap); ++n;
     XtSetValues(widget, args, n);
 
     if (g_color_picker && fg == g_edit_fg)
@@ -479,12 +483,19 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
      XtManageChild(g_color_picker);
 }
 
-#define SMALL_COLOR_WELL_W 16
-// bytes -> bits
-#define SMALL_COLOR_WELL_STRIDE ALIGN_UP(SMALL_COLOR_WELL_W / 8, 4)
+#define COLOR_WELL_ALIGNMENT 8
+
+
+#define COLOR_WELL_W 32
+// (much larger than needed)
+#define COLOR_WELL_STRIDE (COLOR_WELL_ALIGNMENT)
+#define COLOR_WELL_SMALL_W 16
+#define COLOR_WELL_SMALL_STRIDE (COLOR_WELL_ALIGNMENT)
 
 static
-char small_color_well_buffer_[SMALL_COLOR_WELL_W * SMALL_COLOR_WELL_STRIDE];
+char color_well_buffer_[COLOR_WELL_W * COLOR_WELL_STRIDE];
+static
+char color_well_buffer_small_[COLOR_WELL_SMALL_W * COLOR_WELL_SMALL_STRIDE];
 
 static
 void install_color_images_(Widget parent)
@@ -493,17 +504,23 @@ void install_color_images_(Widget parent)
     // But when skinning motif it breaks.
 
     // use a solid white image and recolor it.
-    memset(small_color_well_buffer_, 0xFF, sizeof(small_color_well_buffer_));
+    memset(color_well_buffer_, 0xFF, sizeof(color_well_buffer_));
+    memset(color_well_buffer_small_, 0xFF, sizeof(color_well_buffer_small_));
 
     Display* display = XtDisplay(parent);
-    XImage *color_well_small = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, small_color_well_buffer_,
-                                            SMALL_COLOR_WELL_W, SMALL_COLOR_WELL_W, 8, 4);
 
-    if (!color_well_small) {
+    XImage *color_well = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, color_well_buffer_,
+                                      COLOR_WELL_W, COLOR_WELL_W, 8, COLOR_WELL_ALIGNMENT);
+
+    XImage *color_well_small = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, color_well_buffer_small_,
+                                            COLOR_WELL_SMALL_W, COLOR_WELL_SMALL_W, 8, 8);
+
+    if (!color_well || !color_well_small) {
         fprintf(stderr, "failed to create color image\n");
         exit(1);
     }
 
+    XmInstallImage(color_well, "color_well");
     XmInstallImage(color_well_small, "color_well_small");
 }
 
@@ -523,14 +540,13 @@ Widget ui_setup_command_area(Widget parent)
             XmNorientation, XmHORIZONTAL,
             NULL);
 
-
     char name[UI_NAME_MAX];
     XmString empty = XmStringCreateLocalized("");
 
     n = 0;
     XtSetArg(args[n], XmNlabelString, empty); n++;
 
-    XtSetArg(args[n], XmNmarginWidth, 16); n++;
+    XtSetArg(args[n], XmNmarginWidth, 0); n++;
     XtSetArg(args[n], XmNmarginHeight, 0); n++;
     XtSetArg(args[n], XmNmultiClick, XmMULTICLICK_KEEP); n++;
     XtSetArg(args[n], XmNshadowThickness, 1); n++;
@@ -558,7 +574,6 @@ Widget ui_setup_command_area(Widget parent)
             args,
             n);
     XtAddCallback(fg_color, XmNactivateCallback, color_change_activate_, 0);
-
 
     Widget bg_color = XtCreateManagedWidget(
             "bg_color",
@@ -627,7 +642,6 @@ Widget ui_setup_command_area(Widget parent)
         XParseColor(display, screen_colormap, g_default_colors[i], &color);
         XAllocColor(display, screen_colormap, &color);
 
-        // recolor the white
         Pixmap pixmap = XmGetPixmap(XtScreen(parent), "color_well_small", color.pixel, color.pixel);
 
         n = 0;
