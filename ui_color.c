@@ -20,10 +20,14 @@
 #include <Xm/ColorS.h>
 
 
+static
 Widget g_color_picker = NULL;
-int g_edit_fg = 0;
-char* rgb_txt_path = NULL;
 
+static
+int g_edit_fg = 0;
+
+static
+char* rgb_txt_path = NULL;
 
 #define XCOLOR_NAME_MAX (4 + 6 + 4)
 
@@ -475,22 +479,38 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
      XtManageChild(g_color_picker);
 }
 
+#define SMALL_COLOR_WELL_W 16
+// bytes -> bits
+#define SMALL_COLOR_WELL_STRIDE ALIGN_UP(SMALL_COLOR_WELL_W / 8, 4)
 
+static
+char small_color_well_buffer_[SMALL_COLOR_WELL_W * SMALL_COLOR_WELL_STRIDE];
 
-/*
-typedef struct
+static
+void install_color_images_(Widget parent)
 {
-    char color_name[64];
-    char button_name[64];
-    int index;
-} ColorCell;
+    // We previously used background color for these wells.
+    // But when skinning motif it breaks.
 
-ColorCell g_cells[DEFAULT_COLOR_COUNT];
-*/
+    // use a solid white image and recolor it.
+    memset(small_color_well_buffer_, 0xFF, sizeof(small_color_well_buffer_));
 
+    Display* display = XtDisplay(parent);
+    XImage *color_well_small = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, small_color_well_buffer_,
+                                            SMALL_COLOR_WELL_W, SMALL_COLOR_WELL_W, 8, 4);
+
+    if (!color_well_small) {
+        fprintf(stderr, "failed to create color image\n");
+        exit(1);
+    }
+
+    XmInstallImage(color_well_small, "color_well_small");
+}
 
 Widget ui_setup_command_area(Widget parent)
 {
+    install_color_images_(parent);
+
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
@@ -561,7 +581,6 @@ Widget ui_setup_command_area(Widget parent)
     XtManageChild(selected_split);
     XtManageChild(selected_frame);
 
-
     Widget color_row = XtVaCreateWidget(
             "color_row",
             xmRowColumnWidgetClass,
@@ -572,13 +591,11 @@ Widget ui_setup_command_area(Widget parent)
             XmNnumColumns, 2,
             NULL);
 
-
-
     n = 0;
     XtSetArg(args[n], XmNlabelString, empty); n++;
     XtSetArg(args[n], XmNindicatorOn, XmINDICATOR_NONE); n++;
-    XtSetArg(args[n], XmNmarginWidth, 6); n++;
-    XtSetArg(args[n], XmNmarginHeight, 6); n++;
+    XtSetArg(args[n], XmNmarginWidth, 0); n++;
+    XtSetArg(args[n], XmNmarginHeight, 0); n++;
     XtSetArg(args[n], XmNmultiClick, XmMULTICLICK_KEEP); n++;
     XtSetArg(args[n], XmNshadowThickness, 1); n++;
 
@@ -598,8 +615,6 @@ Widget ui_setup_command_area(Widget parent)
     }
     XmStringFree(empty);
 
-    //XtSetMultiClickTime(display, 200);
-    //
     Display* display = XtDisplay(parent);
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
 
@@ -612,8 +627,12 @@ Widget ui_setup_command_area(Widget parent)
         XParseColor(display, screen_colormap, g_default_colors[i], &color);
         XAllocColor(display, screen_colormap, &color);
 
+        // recolor the white
+        Pixmap pixmap = XmGetPixmap(XtScreen(parent), "color_well_small", color.pixel, color.pixel);
+
         n = 0;
-        XtSetArg(args[n], XmNbackground, color.pixel); n++;
+        XtSetArg(args[n], XmNlabelType, XmPIXMAP); ++n;
+        XtSetArg(args[n], XmNlabelPixmap, pixmap); ++n;
         XtSetValues(cell, args, n);
     }
 
@@ -625,7 +644,6 @@ Widget ui_setup_command_area(Widget parent)
             XmNeditable, False,
             XmNmaxLength, 256,
             NULL);
-
 
     XtManageChild(all_split);
     XtManageChild(command_area);
