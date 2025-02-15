@@ -181,7 +181,7 @@ typedef struct
     unsigned char* paste_board_data;
 
     CcPolygon polygon;
-    CcUndoQueue undo;
+    CcUndo undo;
 
     char open_file_path[OS_PATH_MAX];
 } PaintContext;

@@ -29,12 +29,7 @@ void paint_undo_save(PaintContext* ctx, int x, int y, int w, int h)
     };
 
     const CcLayer* l = ctx->layers + LAYER_MAIN;
-
-    CcRect to_save;
-    if (!cc_rect_intersect(cc_layer_rect(l), r, &to_save)) return;
-
-    UndoPatch* patch = undo_patch_create(&ctx->layers[LAYER_MAIN].bitmap, to_save);
-    cc_undo_queue_push(&ctx->undo, patch);
+    cc_undo_record_change(&ctx->undo, l, r);
 }
 
 static
@@ -48,8 +43,7 @@ void paint_undo_save_full(PaintContext* ctx)
 
 void paint_undo(PaintContext* ctx)
 {
-    cc_undo_queue_trim(&ctx->undo, ctx->max_undo);
-    cc_undo_queue_undo(&ctx->undo, ctx->layers + LAYER_MAIN);
+    cc_undo_maybe_back(&ctx->undo, ctx->layers + LAYER_MAIN);
 
     ctx->active_layer = LAYER_MAIN;
     cc_layer_reset(ctx->layers + LAYER_OVERLAY);
@@ -58,7 +52,7 @@ void paint_undo(PaintContext* ctx)
 
 void paint_redo(PaintContext* ctx)
 {
-    cc_undo_queue_redo(&ctx->undo, ctx->layers + LAYER_MAIN);
+    cc_undo_maybe_forward(&ctx->undo, ctx->layers + LAYER_MAIN);
 
     ctx->active_layer = LAYER_MAIN;
     cc_layer_reset(ctx->layers + LAYER_OVERLAY);
@@ -110,7 +104,6 @@ int paint_open_file(PaintContext* ctx, const char* path, const char** error_mess
 
     cc_viewport_init(&ctx->viewport);
 
-    cc_undo_queue_clear(&ctx->undo);
     paint_undo_save_full(ctx);
 	return 1;
 }
@@ -202,7 +195,6 @@ int paint_save_file_as(PaintContext* ctx, const char* path)
 int paint_save_file(PaintContext* ctx)
 {
     int result = save_file_(ctx, paint_file_path(ctx));
-    cc_undo_queue_trim(&ctx->undo, ctx->max_undo);
     return result;
 }
 
@@ -243,8 +235,8 @@ int paint_init(PaintContext* ctx)
         cc_layer_init(ctx->layers + i, 0, 0);
 
     cc_polygon_init(&ctx->polygon);
-    cc_undo_queue_init(&ctx->undo);
 
+    ctx->undo = (CcUndo) { 0 };
     paint_open_file(ctx, NULL, NULL);
     return 1;
 }

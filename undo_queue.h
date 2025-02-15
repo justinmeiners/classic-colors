@@ -20,39 +20,43 @@
 #include "layer.h"
 
 
-typedef struct UndoPatch
+typedef struct
 {
-    struct UndoPatch* next;
     int full_image;
-
     CcRect rect;
-    unsigned char* data;
     size_t data_size;
+    unsigned char* data;
 } UndoPatch;
 
-UndoPatch* undo_patch_create(const CcBitmap* src, CcRect r);
-void undo_patch_destroy(UndoPatch* patch);
+#define IS_POW_2(n) (0 == ((n) & ((n) - 1)))
 
+// How much memory should we budget?
+// It should be proprotional to the size of the image being edited.
+// Which is what a fixed number of steps will do.
+//
+//
+// Estimate using a 4:1 compression:
+// 1280 * 720 * 4 / 4 * 256 ~= 200 Mb
+
+#define UNDO_QUEUE_MAX 512
+#define UNDO_QUEUE_MIN 400
 
 typedef struct
 {
-    // undo queue
-    int undo_count;
-    UndoPatch* last_undo;
-    UndoPatch* first_undo;
-} CcUndoQueue;
+    UndoPatch patches[UNDO_QUEUE_MAX];
+    size_t front;
+    size_t back;
+    size_t undo;
+    size_t since_last_checkpoint;
+} CcUndo;
 
-void cc_undo_queue_init(CcUndoQueue* q);
+void cc_undo_clear(CcUndo* q);
+void cc_undo_record_change(CcUndo* q, const CcLayer* layer, CcRect changed_region);
 
-void cc_undo_queue_clear(CcUndoQueue* q);
+void cc_undo_maybe_back(CcUndo* q, CcLayer* target);
+void cc_undo_maybe_forward(CcUndo* q, CcLayer* target);
 
-void cc_undo_queue_trim(CcUndoQueue* q, int max_undos);
-void cc_undo_queue_push(CcUndoQueue* q, UndoPatch* patch);
-
-int cc_undo_queue_can_undo(CcUndoQueue* q);
-int cc_undo_queue_can_redo(CcUndoQueue* q);
-
-void cc_undo_queue_undo(CcUndoQueue* q, CcLayer* target);
-void cc_undo_queue_redo(CcUndoQueue* q, CcLayer* target);
+int cc_undo_can_back(CcUndo* q);
+int cc_undo_can_forward(CcUndo* q);
 
 #endif
