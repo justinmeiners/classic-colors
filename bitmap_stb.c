@@ -37,7 +37,7 @@ CcBitmap cc_bitmap_decompress(unsigned char* compressed_data, size_t compressed_
     CcBitmap b = {
         .w = w,
         .h = h,
-        .data = (char *)data
+        .data = (CcPixel *)data
     };
     return b;
 }

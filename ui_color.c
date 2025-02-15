@@ -20,10 +20,14 @@
 #include <Xm/ColorS.h>
 
 
+static
 Widget g_color_picker = NULL;
-int g_edit_fg = 0;
-char* rgb_txt_path = NULL;
 
+static
+int g_edit_fg = 0;
+
+static
+char* rgb_txt_path = NULL;
 
 #define XCOLOR_NAME_MAX (4 + 6 + 4)
 
@@ -88,12 +92,16 @@ void ui_set_color(Widget window, CcPixel color, int fg)
     Arg args[UI_ARGS_MAX];
 
     PaintContext* ctx = &g_paint_ctx;
-
     paint_set_color(ctx, color, fg);
 
     Widget widget = XtNameToWidget(window, fg ? "*fg_color" : "*bg_color");
     Display* display = XtDisplay(window);
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
+
+    n = 0;
+    Pixmap old_pixmap;
+    XtSetArg(args[n], XmNlabelPixmap, &old_pixmap); ++n;
+    XtGetValues(widget, args, n);
 
     char name[XCOLOR_NAME_MAX];
     color_to_xname_(name, color);
@@ -104,9 +112,15 @@ void ui_set_color(Widget window, CcPixel color, int fg)
     XParseColor(display, screen_colormap, name, &xcolor);
     XAllocColor(display, screen_colormap, &xcolor);
 
+    Pixmap pixmap = XmGetPixmap(XtScreen(widget), "color_well", xcolor.pixel, xcolor.pixel);
+
     n = 0;
-    XtSetArg(args[n], XmNbackground, xcolor.pixel); n++;
+    XtSetArg(args[n], XmNlabelType, XmPIXMAP); ++n;
+    XtSetArg(args[n], XmNlabelPixmap, pixmap); ++n;
     XtSetValues(widget, args, n);
+
+    // release old pixmap (ref counted)
+    XmDestroyPixmap(XtScreen(widget), old_pixmap);
 
     if (g_color_picker && fg == g_edit_fg)
     {
@@ -393,46 +407,41 @@ void test_colors_(Display *display)
 
 
 static
-void color_clicked_(Widget widget, void* client_data, XEvent* event, Boolean* continue_dispatch)
+void select_color_well_(Widget widget, size_t color_index, int fg)
 {
     Display* display = XtDisplay(widget);
-
     if (DEBUG_LOG) {
         test_colors_(display);
     }
 
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
-
-    size_t index = (size_t)client_data;
     XColor xcolor;
-    XParseColor(display, screen_colormap, g_default_colors[index], &xcolor);
+    XParseColor(display, screen_colormap, g_default_colors[color_index], &xcolor);
     CcPixel color = xcolor_to_color_(xcolor);
+    ui_set_color(g_main_w, color, fg);
+}
 
-    int fg = 0;
-
+static
+void color_clicked_(Widget widget, void* client_data, XEvent* event, Boolean* continue_dispatch)
+{
+    // handle right click
     switch (event->type)
     {
     case ButtonPress:
-        if (event->xbutton.button == 1)
+        if (event->xbutton.button == 3)
         {
-            fg = 1;
+            select_color_well_(widget, (size_t)client_data, 0);
+            *continue_dispatch = 0;
         }
-        else if (event->xbutton.button == 3)
-        {
-            fg = 0;
-        }
-        *continue_dispatch = 0;
         break;
     }
-
-    ui_set_color(g_main_w, color, fg);
 }
 
 // Double click broken in Motif? https://bugzilla.redhat.com/show_bug.cgi?id=184143
 static void color_cell_activate_(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     XmPushButtonCallbackStruct* cbs = (XmPushButtonCallbackStruct*)call_data;
-
+    select_color_well_(widget, (size_t)client_data, 1);
 }
 
 static void color_swap_(Widget widget, XtPointer client_data, XtPointer call_data)
@@ -448,7 +457,6 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
 {
      int n = 0;
      Arg args[UI_ARGS_MAX];
-
 
      PaintContext* ctx = &g_paint_ctx;
      size_t index = (size_t)client_data;
@@ -475,22 +483,50 @@ static void color_change_activate_(Widget widget, XtPointer client_data, XtPoint
      XtManageChild(g_color_picker);
 }
 
+#define BITMAP_ALIGN_BYTES 8
 
+#define COLOR_WELL_W 32
+#define COLOR_WELL_STRIDE (ALIGN_UP(COLOR_WELL_W, BITMAP_ALIGN_BYTES * 8) / 8)
+#define COLOR_WELL_SMALL_W 16
+#define COLOR_WELL_SMALL_STRIDE (ALIGN_UP(COLOR_WELL_SMALL_W, BITMAP_ALIGN_BYTES * 8) / 8)
 
-/*
-typedef struct
+static
+char color_well_buffer_[COLOR_WELL_W * COLOR_WELL_STRIDE];
+static
+char color_well_buffer_small_[COLOR_WELL_SMALL_W * COLOR_WELL_SMALL_STRIDE];
+
+static
+void install_color_images_(Widget parent)
 {
-    char color_name[64];
-    char button_name[64];
-    int index;
-} ColorCell;
+    // We previously used background color for these wells.
+    // But when skinning motif it breaks.
 
-ColorCell g_cells[DEFAULT_COLOR_COUNT];
-*/
+    // use a solid white image and recolor it.
+    memset(color_well_buffer_, 0xFF, sizeof(color_well_buffer_));
+    memset(color_well_buffer_small_, 0xFF, sizeof(color_well_buffer_small_));
 
+    Display* display = XtDisplay(parent);
+
+    const size_t bits_per_bytes = 8;
+    XImage *color_well = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, color_well_buffer_,
+                                      COLOR_WELL_W, COLOR_WELL_W, bits_per_bytes, BITMAP_ALIGN_BYTES);
+
+    XImage *color_well_small = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 1, XYBitmap, 0, color_well_buffer_small_,
+                                            COLOR_WELL_SMALL_W, COLOR_WELL_SMALL_W, bits_per_bytes, BITMAP_ALIGN_BYTES);
+
+    if (!color_well || !color_well_small) {
+        fprintf(stderr, "failed to create color image\n");
+        exit(1);
+    }
+
+    XmInstallImage(color_well, "color_well");
+    XmInstallImage(color_well_small, "color_well_small");
+}
 
 Widget ui_setup_command_area(Widget parent)
 {
+    install_color_images_(parent);
+
     int n = 0;
     Arg args[UI_ARGS_MAX];
 
@@ -503,14 +539,13 @@ Widget ui_setup_command_area(Widget parent)
             XmNorientation, XmHORIZONTAL,
             NULL);
 
-
     char name[UI_NAME_MAX];
     XmString empty = XmStringCreateLocalized("");
 
     n = 0;
     XtSetArg(args[n], XmNlabelString, empty); n++;
 
-    XtSetArg(args[n], XmNmarginWidth, 16); n++;
+    XtSetArg(args[n], XmNmarginWidth, 0); n++;
     XtSetArg(args[n], XmNmarginHeight, 0); n++;
     XtSetArg(args[n], XmNmultiClick, XmMULTICLICK_KEEP); n++;
     XtSetArg(args[n], XmNshadowThickness, 1); n++;
@@ -539,7 +574,6 @@ Widget ui_setup_command_area(Widget parent)
             n);
     XtAddCallback(fg_color, XmNactivateCallback, color_change_activate_, 0);
 
-
     Widget bg_color = XtCreateManagedWidget(
             "bg_color",
             xmPushButtonWidgetClass,
@@ -561,7 +595,6 @@ Widget ui_setup_command_area(Widget parent)
     XtManageChild(selected_split);
     XtManageChild(selected_frame);
 
-
     Widget color_row = XtVaCreateWidget(
             "color_row",
             xmRowColumnWidgetClass,
@@ -572,13 +605,11 @@ Widget ui_setup_command_area(Widget parent)
             XmNnumColumns, 2,
             NULL);
 
-
-
     n = 0;
     XtSetArg(args[n], XmNlabelString, empty); n++;
     XtSetArg(args[n], XmNindicatorOn, XmINDICATOR_NONE); n++;
-    XtSetArg(args[n], XmNmarginWidth, 6); n++;
-    XtSetArg(args[n], XmNmarginHeight, 6); n++;
+    XtSetArg(args[n], XmNmarginWidth, 0); n++;
+    XtSetArg(args[n], XmNmarginHeight, 0); n++;
     XtSetArg(args[n], XmNmultiClick, XmMULTICLICK_KEEP); n++;
     XtSetArg(args[n], XmNshadowThickness, 1); n++;
 
@@ -598,8 +629,6 @@ Widget ui_setup_command_area(Widget parent)
     }
     XmStringFree(empty);
 
-    //XtSetMultiClickTime(display, 200);
-    //
     Display* display = XtDisplay(parent);
     Colormap screen_colormap = DefaultColormap(display, DefaultScreen(display));
 
@@ -612,8 +641,11 @@ Widget ui_setup_command_area(Widget parent)
         XParseColor(display, screen_colormap, g_default_colors[i], &color);
         XAllocColor(display, screen_colormap, &color);
 
+        Pixmap pixmap = XmGetPixmap(XtScreen(parent), "color_well_small", color.pixel, color.pixel);
+
         n = 0;
-        XtSetArg(args[n], XmNbackground, color.pixel); n++;
+        XtSetArg(args[n], XmNlabelType, XmPIXMAP); ++n;
+        XtSetArg(args[n], XmNlabelPixmap, pixmap); ++n;
         XtSetValues(cell, args, n);
     }
 
@@ -625,7 +657,6 @@ Widget ui_setup_command_area(Widget parent)
             XmNeditable, False,
             XmNmaxLength, 256,
             NULL);
-
 
     XtManageChild(all_split);
     XtManageChild(command_area);

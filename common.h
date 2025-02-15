@@ -63,6 +63,6 @@ unsigned int isqrt(unsigned int y)
 #endif
 
 #define ALIGN_DOWN(x, alignment) ((x) & (~(alignment - 1)))
-#define ALIGN_UP(x, alignment) ALIGN_DOWN(x + (alignment - 1), alignment)
+#define ALIGN_UP(x, alignment) ALIGN_DOWN((x) + (alignment - 1), alignment)
 
 #endif // COMMON_H_
