@@ -70,5 +70,7 @@ void ui_refresh_tool(void);
 void ui_refresh_title(void);
 XtAppContext ui_app();
 
+XImage *cc_bitmap_create_ximage(CcBitmap *b, Display *display, Visual *visual);
+void cc_bitmap_swap_for_xvisual(CcBitmap *b, const XVisualInfo *info);
 
 #endif

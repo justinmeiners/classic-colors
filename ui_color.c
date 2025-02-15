@@ -26,10 +26,8 @@ Widget g_color_picker = NULL;
 static
 int g_edit_fg = 0;
 
-static
-char* rgb_txt_path = NULL;
 
-#define XCOLOR_NAME_MAX (4 + 6 + 4)
+#define XCOLOR_NAME_MAX 32
 
 // https://tronche.com/gui/x/xlib/color/structures.html
 static
@@ -69,9 +67,9 @@ int find_rgb_txt_path(char* buffer, size_t max)
         "lib/X11/rgb.txt"
     };
 
-    size_t n = sizeof(to_try) / sizeof(*to_try);
+    unsigned n = sizeof(to_try) / sizeof(to_try[0]);
 
-    for (int i = 0; i < n; ++i)
+    for (unsigned i = 0; i < n; ++i)
     {
         snprintf(buffer, max, "%s/%s", X11_PATH_PREFIX, to_try[i]);
 
@@ -213,11 +211,17 @@ void rgb_changed_(Widget widget, XtPointer client_data, XtPointer call_data)
 
 #define SCRATCH_MAX 1024
 
+static
+int str_is_empty(const char *c)
+{
+    return c[0] == '\0';
+}
+
 static Widget setup_color_picker_(Widget parent, CcPixel color)
 {
-    if (!rgb_txt_path)
-    {
-        rgb_txt_path = malloc(sizeof(char) * OS_PATH_MAX);
+    static char rgb_txt_path[OS_PATH_MAX] = "";
+
+    if (str_is_empty(rgb_txt_path)) {
         if (find_rgb_txt_path(rgb_txt_path, OS_PATH_MAX))
         {
             if (DEBUG_LOG)
@@ -255,7 +259,7 @@ static Widget setup_color_picker_(Widget parent, CcPixel color)
     XtSetArg(args[n], XmNshowSash, 0); ++n;
     XtSetArg(args[n], XmNcolorName, color_name); ++n;
 
-    if (rgb_txt_path)
+    if (!str_is_empty(rgb_txt_path))
     {
         XtSetArg(args[n], XmNrgbFile, rgb_txt_path); ++n;
     }

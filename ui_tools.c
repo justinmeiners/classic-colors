@@ -52,7 +52,8 @@ typedef enum
     OPTION_COUNT,
 } ToolOption;
 
-static void set_option_(PaintContext* ctx, ToolOption option, int value)
+static
+void set_option_(PaintContext* ctx, ToolOption option, int value)
 {
     switch (option)
     {
@@ -80,7 +81,8 @@ static void set_option_(PaintContext* ctx, ToolOption option, int value)
     }
 }
 
-static int get_option_(const PaintContext* ctx, ToolOption option)
+static
+int get_option_(const PaintContext* ctx, ToolOption option)
 {
     switch (option)
     {

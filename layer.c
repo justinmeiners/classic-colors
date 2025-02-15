@@ -219,26 +219,8 @@ void cc_text_composite(CcText *text, CcLayer* layer)
 
 void cc_text_set_string(CcText *layer, const wchar_t* string)
 {
-    if (!string)
-    {
-        if (layer->text) {
-            layer->dirty = 1;
-            free(layer->text);
-        }
-        layer->text = NULL;
-        layer->text_buffer_size = 0;
-    }
-    else
-    {
-        layer->dirty = 1;
+    assert(string);
 
-        size_t len = wcslen(string) + 1;
-        if (len > layer->text_buffer_size)
-        {
-            if (layer->text) free(layer->text);
-            layer->text = malloc(len * sizeof(wchar_t));
-        }
-        wcsncpy(layer->text, string, len);
-    }
+    layer->dirty = 1;
+    wcsncpy(layer->text, string, CC_TEXT_STRING_MAX);
 }
-

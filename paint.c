@@ -341,7 +341,7 @@ void prepare_empty_overlay_(PaintContext* ctx)
     cc_bitmap_clear(&l->bitmap, COLOR_CLEAR);
     l->blend = COLOR_BLEND_OVERLAY;
 
-    cc_text_set_string(&ctx->text, NULL);
+    cc_text_set_string(&ctx->text, L"");
 }
 
 static
@@ -876,8 +876,7 @@ void paint_tool_up(PaintContext* ctx, int x, int y, int button)
                     overlay->y = rect.y;
                     cc_layer_set_bitmap(overlay, &b);
 
-                    cc_text_set_string(&ctx->text, NULL);
-                    ctx->text.dirty = 1;
+                    cc_text_set_string(&ctx->text, L"");
                     ctx->active_layer = LAYER_OVERLAY;
                 }
             }
@@ -928,8 +927,11 @@ void paint_crop(PaintContext* ctx)
     }
 }
 
-void paint_composite(PaintContext* ctx)
+void paint_composite(PaintContext* ctx, CcBitmap *composite)
 {
+    assert(composite->w == ctx->viewport.w);
+    assert(composite->h == ctx->viewport.h);
+
     if (ctx->text.dirty && paint_is_editing_text(ctx)) {
         cc_text_composite(&ctx->text, ctx->layers + LAYER_OVERLAY);
         ctx->text.dirty = 0;
@@ -947,13 +949,11 @@ void paint_composite(PaintContext* ctx)
     int target_h = int_ceil(ctx->viewport.h, ctx->viewport.zoom);
 
     cc_layer_ensure_size(ctx->layers + LAYER_INTERMEDIATE, target_w, target_h);
-    cc_layer_ensure_size(ctx->layers + LAYER_COMPOSITE, ctx->viewport.w, ctx->viewport.h);
 
     int needs_zoom = ctx->viewport.zoom != 1;
 
-    int target_layer = needs_zoom ? LAYER_INTERMEDIATE : LAYER_COMPOSITE;
-    CcLayer* target = ctx->layers + target_layer;
-    cc_bitmap_clear(&target->bitmap, ctx->view_bg_color);
+    CcBitmap* target = needs_zoom ? &ctx->layers[LAYER_INTERMEDIATE].bitmap : composite;
+    cc_bitmap_clear(target, ctx->view_bg_color);
 
     for (int i = LAYER_MAIN; i < LAYER_COUNT; ++i)
     {
@@ -962,7 +962,7 @@ void paint_composite(PaintContext* ctx)
         {
             cc_bitmap_blit(
                     &l->bitmap,
-                    &target->bitmap,
+                    target,
                     0, 0,
                     l->x - vx, l->y - vy,
                     cc_layer_w(l), cc_layer_h(l),
@@ -973,7 +973,7 @@ void paint_composite(PaintContext* ctx)
 
     if (needs_zoom)
     {
-        cc_bitmap_zoom(&target->bitmap, &ctx->layers[LAYER_COMPOSITE].bitmap, ctx->viewport.zoom);
+        cc_bitmap_zoom(target, composite, ctx->viewport.zoom);
     }
 }
 

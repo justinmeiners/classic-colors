@@ -16,9 +16,6 @@
 
 #include "ui.h"
 
-#define MAX_ZOOM 32
-#define MIN_ZOOM 1
-
 static
 void cb_view_menu_(Widget widget, XtPointer a, XtPointer b)
 {
@@ -30,13 +27,15 @@ void cb_view_menu_(Widget widget, XtPointer a, XtPointer b)
     {
         case 0:
         {
-            int new_zoom = MIN(ctx->viewport.zoom * 2, MAX_ZOOM);
+            const int max_zoom = 32;
+            int new_zoom = MIN(ctx->viewport.zoom * 2, max_zoom);
             ctx->viewport = cc_viewport_zoom_centered(&ctx->viewport, new_zoom);
             break;
         }
         case 1:
         {
-            int new_zoom = MAX(ctx->viewport.zoom / 2, MIN_ZOOM);
+            const int min_zoom = 1;
+            int new_zoom = MAX(ctx->viewport.zoom / 2, min_zoom);
             ctx->viewport = cc_viewport_zoom_centered(&ctx->viewport, new_zoom);
             break;
         }

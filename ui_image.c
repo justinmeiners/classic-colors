@@ -16,9 +16,16 @@
 
 #include "ui.h"
 
+static
 Widget flip_dialog = NULL;
+
+static
 Widget stretch_dialog = NULL;
+
+static
 Widget attributes_dialog = NULL;
+
+static
 size_t flip_option = 0;
 
 static void cb_flip_ok_(Widget widget, XtPointer client_data, XtPointer call_data)

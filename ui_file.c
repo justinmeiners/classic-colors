@@ -21,9 +21,13 @@
 
 #include <sys/stat.h>
 
+static
 Widget open_dialog;
+
+static
 Widget save_dialog;
 
+static
 char potential_save_path[OS_PATH_MAX];
 
 void ui_new(Widget widget)

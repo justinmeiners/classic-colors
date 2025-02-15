@@ -21,6 +21,7 @@
 #include <Xm/TextF.h>
 #include <X11/Shell.h>
 
+static
 Widget g_window = NULL;
 
 static void update_text_(Widget widget, XtPointer client_data, XtPointer call_data)
@@ -29,7 +30,6 @@ static void update_text_(Widget widget, XtPointer client_data, XtPointer call_da
     if (ctx->tool != TOOL_TEXT) return;
 
     const wchar_t* text = XmTextGetStringWcs(widget);
-
     cc_text_set_string(&ctx->text, text);
     ui_refresh_drawing(0);
 }
@@ -238,14 +238,15 @@ Widget ui_start_editing_text(void)
         g_window = setup_text_window_(g_main_w);
     }
     Widget text = XtNameToWidget(g_window, "*text_area");
-    wchar_t* current_text = ctx->text.text;
-    XmTextSetStringWcs(text, current_text == NULL ? L"" : current_text);
+    XmTextSetStringWcs(text, ctx->text.text);
 
     XtVaSetValues(text, XmNeditable, 1, NULL);
 
     XtManageChild(g_window);
-
     XMapRaised(XtDisplay(g_window), XtWindow(g_window));
+
+    // focus
+    XmProcessTraversal(text, XmTRAVERSE_CURRENT);
     return g_window;
 }
 

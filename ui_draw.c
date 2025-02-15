@@ -43,13 +43,14 @@ typedef struct
     XColor select_bright;
     XColor select_dark;
 
-    XImage* x_images[2];
-    int x_index;
+    XImage* x_image;
+
+    size_t shm_index;
+    XImage *shm_image[2];
 
 #ifdef FEATURE_SHM
     // "it will have a lifetime at least as long as that of the ... XImage"
     XShmSegmentInfo shminfo;
-    XImage* shm_image;
 #endif
 } DrawInfo;
 
@@ -57,44 +58,6 @@ typedef struct
 DrawInfo g_draw_info;
 Widget draw_area = NULL;
 Widget scroll_w = NULL;
-XtIntervalId g_down_timer = 0;
-
-static
-void copy_bitmap_to_ximage_(XImage* dest, const CcBitmap* src, const XVisualInfo* info)
-{
-    // as we find more pixel formats we will need to add additional cases here
-    if (info->red_mask == 0x00FF0000
-            && info->green_mask == 0x0000FF00
-            && info->blue_mask == 0x000000FF)
-    {
-        if (dest->bitmap_unit == 32 && dest->format == ZPixmap)
-        {
-            // Fast path
-            // https://groups.google.com/g/comp.windows.x/c/c4tjX7UiuVU
-            uint8_t* raw_data = (uint8_t*)src->data;
-            memcpy(dest->data, raw_data + 1, src->w * src->h * sizeof(uint32_t) - 1);
-        }
-        else
-        {
-            // General path
-            for (int y = 0; y < src->h; ++y)
-            {
-                for (int x = 0; x < src->w; ++x)
-                {
-                    XPutPixel(dest, x, y, src->data[x + y * src->w] >> 8);
-                }
-            }
-        }
-    }
-    else
-    {
-        fprintf(stderr, "X11 is not in a compatible pixel format.");
-        exit(2);
-    }
-}
-
-
-#define DRAW_PADDING 64
 
 static
 void update_scroll_(void)
@@ -103,8 +66,10 @@ void update_scroll_(void)
     Arg args[UI_ARGS_MAX];
     PaintContext* ctx = &g_paint_ctx;
 
-    int max_w = paint_w(ctx) + DRAW_PADDING;
-    int max_h = paint_h(ctx) + DRAW_PADDING;
+    const int draw_padding = 64;
+
+    int max_w = paint_w(ctx) + draw_padding;
+    int max_h = paint_h(ctx) + draw_padding;
 
     int h_slider_size = MIN(ctx->viewport.w / ctx->viewport.zoom, max_w);
     int v_slider_size = MIN(ctx->viewport.h / ctx->viewport.zoom, max_h);
@@ -156,13 +121,12 @@ void resize_view_(void)
     ctx->viewport.h = view_h;
 }
 
-#define TIMER_INTERVAL 25
+static
+void schedule_hold_down_timer_(Time time_interval, PaintTool tool);
 
 static
-void timer_fire_(XtPointer client_data, XtIntervalId* id)
+void fire_hold_down_timer_(XtPointer client_data, XtIntervalId* id)
 {
-    g_down_timer = 0;
-
     PaintContext* ctx = &g_paint_ctx;
 
     PaintTool tool = (PaintTool)client_data;
@@ -170,10 +134,27 @@ void timer_fire_(XtPointer client_data, XtIntervalId* id)
     {
         paint_tool_update(ctx);
         ui_refresh_drawing(0);
-        g_down_timer = XtAppAddTimeOut(ui_app(), TIMER_INTERVAL, timer_fire_, (XtPointer)ctx->tool);
+
+        const Time hold_update = 25;
+        schedule_hold_down_timer_(hold_update, tool);
     }
 }
 
+static
+void schedule_hold_down_timer_(Time time_interval, PaintTool tool)
+{
+    static XtIntervalId timer = 0;
+
+    if (time_interval == 0) {
+        if (timer != 0) {
+            XtRemoveTimeOut(timer);
+            timer = 0;
+        }
+        fire_hold_down_timer_((XtPointer)tool, &timer);
+    }
+
+    timer = XtAppAddTimeOut(ui_app(), time_interval, fire_hold_down_timer_, (XtPointer)tool);
+}
 
 static
 void ui_cb_draw_input_(Widget scrollbar, XtPointer client_data, XtPointer call_data)
@@ -182,89 +163,96 @@ void ui_cb_draw_input_(Widget scrollbar, XtPointer client_data, XtPointer call_d
 
     XmDrawingAreaCallbackStruct *cbs = (XmDrawingAreaCallbackStruct*)call_data;
     XEvent *event = cbs->event;
-    if (cbs->reason == XmCR_INPUT) 
+    if (cbs->reason != XmCR_INPUT)
     {
-        Display *dpy = event->xany.display;
-
-        int x, y;
-        int shouldRefresh = 0;
-        switch (event->type)
-        {
-            case ButtonPress:
-                // http://xahlee.info/linux/linux_x11_mouse_button_number.html
-                if (event->xbutton.button > 3) break;
-                ctx->tool_force_align = (event->xbutton.state & ShiftMask);
-
-                cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
-                paint_tool_down(ctx, x, y, event->xbutton.button);
-
-                if (g_down_timer != 0)
-                {
-                    XtRemoveTimeOut(g_down_timer);
-                }
-                if (ctx->request_tool_timer)
-                {
-                    timer_fire_((XPointer)ctx->tool, NULL);
-                }
-
-                shouldRefresh = 1;
-                break;
-            case ButtonRelease:
-            {
-                if (event->xbutton.button > 3) break;
-                int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
-
-                cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
-                paint_tool_up(ctx, x, y, event->xbutton.button);
-
-                if (g_down_timer != 0)
-                {
-                    XtRemoveTimeOut(g_down_timer);
-                }
-
-                ui_refresh_tool();
-                shouldRefresh = 1;
-
-                if (should_update_scroll) update_scroll_();
-                if (paint_is_editing_text(ctx)) ui_start_editing_text();
-
-                break;
+        if (g_ready) {
+            if (DEBUG_LOG) {
+                fprintf(stderr, "other draw update\n");
             }
-            case MotionNotify:
-                ctx->tool_force_align = (event->xbutton.state & ShiftMask);
-
-                cc_viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
-                paint_tool_move(ctx, x, y);
-                shouldRefresh = 1;
-                break;
-            case KeyPress:
-            {
-                int key_sym = XLookupKeysym(&event->xkey, 0);
-                if (key_sym == XK_Escape)
-                {
-                    paint_tool_cancel(ctx);
-                }
-                break;
-            }
+            ui_refresh_drawing(1);
         }
+        return;
+    }
 
-        if (shouldRefresh)
+    int x, y;
+    int should_refresh = 0;
+    switch (event->type)
+    {
+        case ButtonPress:
+            // http://xahlee.info/linux/linux_x11_mouse_button_number.html
+            if (event->xbutton.button > 3) break;
+            ctx->tool_force_align = (event->xbutton.state & ShiftMask);
+
+            cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+            paint_tool_down(ctx, x, y, event->xbutton.button);
+
+            schedule_hold_down_timer_(0, ctx->tool);
+
+            should_refresh = 1;
+            break;
+        case ButtonRelease:
         {
-            if (ctx->tool == TOOL_EYE_DROPPER)
+            if (event->xbutton.button > 3) break;
+            int should_update_scroll = (ctx->tool == TOOL_MAGNIFIER);
+
+            cc_viewport_coord_to_paint(&ctx->viewport, event->xbutton.x, event->xbutton.y, &x, &y);
+            paint_tool_up(ctx, x, y, event->xbutton.button);
+
+            ui_refresh_tool();
+            should_refresh = 1;
+
+            if (should_update_scroll) update_scroll_();
+            if (paint_is_editing_text(ctx)) ui_start_editing_text();
+
+            break;
+        }
+        case MotionNotify:
+        {
+            // limit framerate to avoid maxing CPU unnecessarily
+            const Time min_time_between_frames = 15;
+
+            static Time previous_notify_time = 0;
+            if (event->xmotion.time < previous_notify_time + min_time_between_frames) break;
+
+            previous_notify_time = event->xmotion.time;
+
+            ctx->tool_force_align = (event->xbutton.state & ShiftMask);
+
+            cc_viewport_coord_to_paint(&ctx->viewport, event->xmotion.x, event->xmotion.y, &x, &y);
+            paint_tool_move(ctx, x, y);
+            should_refresh = 1;
+            break;
+        }
+        case KeyPress:
+        {
+            int key_sym = XLookupKeysym(&event->xkey, 0);
+            if (key_sym == XK_Escape)
             {
-                ui_set_color(g_main_w, ctx->fg_color, 1);
-                ui_set_color(g_main_w, ctx->bg_color, 0);
+                paint_tool_cancel(ctx);
             }
-            ui_refresh_drawing(0);
+            break;
         }
     }
-    if (g_ready) ui_refresh_drawing(1);
-}
 
+    if (!should_refresh) return;
+
+    if (ctx->tool == TOOL_EYE_DROPPER)
+    {
+        ui_set_color(g_main_w, ctx->fg_color, 1);
+        ui_set_color(g_main_w, ctx->bg_color, 0);
+    }
+    ui_refresh_drawing(0);
+}
 
 void ui_cb_draw_update(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 {
-    if (g_ready) ui_refresh_drawing(1);
+    if (!g_ready) {
+        return;
+    }
+    if (DEBUG_LOG) {
+        fprintf(stderr, "draw update\n");
+    }
+    ui_refresh_drawing(1);
 }
 
 static
@@ -353,7 +341,7 @@ Widget ui_setup_draw_area(Widget parent)
     }
 
 #ifdef FEATURE_SHM
-    buffer->shm_image = NULL;
+    buffer->x_image = NULL;
     buffer->use_shm = XShmQueryExtension(display) == True;
 #else
     buffer->use_shm = 0;
@@ -361,7 +349,7 @@ Widget ui_setup_draw_area(Widget parent)
 
     if (DEBUG_LOG)
     {
-        printf(
+        fprintf(stderr,
                 "X11 color mask. red: %08lx. green: %08lx. blue: %08lx\n",
                 g_draw_info.x_visual_info.red_mask, g_draw_info.x_visual_info.green_mask, g_draw_info.x_visual_info.blue_mask
               );
@@ -400,69 +388,34 @@ void scrolled_(Widget scrollbar, XtPointer client_data, XtPointer call_data)
 static
 void shm_destroy_image_(DrawInfo* ctx, Display* dpy)
 {
+    if (!ctx->shm_image[0]) {
+        return;
+    }
+    ctx->x_image = NULL;
+
 #ifdef FEATURE_SHM
-    if (ctx->shm_image)
-    {
+    if (ctx->shminfo.shmid != -1) {
         XShmDetach(dpy, &ctx->shminfo);
-        XDestroyImage(ctx->shm_image);
         shmdt(ctx->shminfo.shmaddr);
         shmctl(ctx->shminfo.shmid, IPC_RMID, 0);
-        ctx->shm_image = NULL;
     }
 #endif
-}
 
-static
-void double_buffer_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
-{
-    int w = composite->bitmap.w;
-    int h = composite->bitmap.h;
-
-    int needs_to_resize = !ctx->x_images[0]
-        || (ctx->x_images[0]->width != w)
-        || (ctx->x_images[0]->height != h);
-
-    if (!needs_to_resize || w <= 0 || h <= 0) return;
-
-    if (DEBUG_LOG) fprintf(stderr, "resizing double buffer\n");
-
-    for (int i = 0; i < 2; ++i) {
-        if (ctx->x_images[i]) XDestroyImage(ctx->x_images[i]);
-
-        char* data = malloc(w * h * 4);
-        // What is bitmap_pad? 
-        // the documentation isn't clear, but I found:
-        // "This is a very roundabout way of describing the pixel size in bits."
-        // https://handmade.network/wiki/2834-tutorial_a_tour_through_xlib_and_related_technologies
-        ctx->x_images[i] = XCreateImage(dpy, ctx->x_visual, 24, ZPixmap, 0, data, w, h, 32, 0);
-
-        if (!ctx->x_images[i])
-        {
-            fprintf(stderr, "failed to create display buffer");
-            exit(1);
+    for (size_t i = 0; i < 2; ++i) {
+        if (ctx->shm_image[i]) {
+            XDestroyImage(ctx->shm_image[i]);
+            ctx->shm_image[i] = NULL;
         }
     }
 }
- 
 
 static
-int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
+int shm_prepare_(DrawInfo* ctx, Display* dpy, int w, int h)
 {
 #ifndef FEATURE_SHM
     assert(0);
     return 0;
 #else 
-    int w = composite->bitmap.w;
-    int h = composite->bitmap.h;
-
-    int needs_to_resize = !ctx->shm_image
-        || (ctx->shm_image->width != w)
-        || (ctx->shm_image->height != h);
-
-    if (!needs_to_resize || w <= 0 || h <= 0)
-    {
-        return 1;
-    }
     if (DEBUG_LOG) fprintf(stderr, "resizing shm buffer\n");
 
     shm_destroy_image_(ctx, dpy);
@@ -472,17 +425,24 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
     //
     // "there are no "offset", "bitmap_pad", or "bytes_per_line" arguments.
     // These quantities will be defined by the server ... your code needs to abide by them."
-    XImage* shm_image = XShmCreateImage(dpy, ctx->x_visual, 24, ZPixmap, NULL, &ctx->shminfo, w, h);
+    ctx->shm_image[0] = XShmCreateImage(dpy, ctx->x_visual, 24, ZPixmap, NULL, &ctx->shminfo, w, h);
 
-    if (!shm_image) goto cleanup;
-    if (shm_image->xoffset != 0 || shm_image->bitmap_pad != 32)
-    {
-        fprintf(stderr, "xshm gave invalid offset or bitmap_pad. format is unusable.\n");
-        goto cleanup;
+    if (!ctx->shm_image[0]) {
+        return 0;
     }
 
-	size_t size = shm_image->bytes_per_line * shm_image->height;
-    ctx->shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777);
+    if (ctx->shm_image[0]->bytes_per_line != w * sizeof(CcPixel)) {
+        fprintf(stderr, "bad alignment\n");
+        XDestroyImage(ctx->shm_image[0]);
+        return 0;
+    }
+
+    assert(ctx->shm_image[0]->bitmap_pad == 32);
+
+	size_t image_size = ctx->shm_image[0]->bytes_per_line * ctx->shm_image[0]->height;
+    size_t buffer_size = image_size * 2;
+
+    ctx->shminfo.shmid = shmget(IPC_PRIVATE, buffer_size, IPC_CREAT | 0777);
     if (ctx->shminfo.shmid == -1)
     {
 		// Mac sometimes fails here. with errno = 12 (ENOMEM)
@@ -493,7 +453,7 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
 		// Verify cleanup:
 		// ipcs
 		// ipcrm -m ...
-        fprintf(stderr, "failed to create shared memory: %d. (shmget) %d\n", (int)size, errno);
+        fprintf(stderr, "failed to create shared memory: %d. (shmget) %d\n", (int)buffer_size, errno);
 #ifdef __APPLE__
         if (errno == ENOMEM)
         {
@@ -503,8 +463,7 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
         goto cleanup;
     }
 
-    shm_image->data = shmat(ctx->shminfo.shmid, 0, 0);
-    ctx->shminfo.shmaddr = shm_image->data;
+    ctx->shminfo.shmaddr = shmat(ctx->shminfo.shmid, 0, 0);
     // server should not modify image
     ctx->shminfo.readOnly = 1;
 
@@ -514,25 +473,66 @@ int shm_prepare_(DrawInfo* ctx, Display* dpy, const CcLayer* composite)
         goto cleanup;
     }
 
+    ctx->shm_image[0]->data = ctx->shminfo.shmaddr;
 
-    ctx->shm_image = shm_image;
+    ctx->shm_image[1] = XShmCreateImage(dpy, ctx->x_visual, 24, ZPixmap, NULL, &ctx->shminfo, w, h);
+    ctx->shm_image[1]->data = ctx->shminfo.shmaddr + image_size;
 
+    if (!ctx->shm_image[1]) goto cleanup;
     return 1;
 
 cleanup:
-    if (shm_image)
-        XDestroyImage(shm_image);
-
-    if (ctx->shminfo.shmid != -1)
-    {
-	    shmdt(ctx->shminfo.shmaddr);
-        shmctl(ctx->shminfo.shmid, IPC_RMID, 0);
-    }
-
-    ctx->shm_image = NULL;
+    shm_destroy_image_(ctx, dpy);
     return 0;
 #endif
+}
 
+static
+void framebuffer_prepare_(DrawInfo* buffer, Display* dpy, int w, int h)
+{
+    int needs_to_resize = !buffer->x_image
+        || (buffer->x_image->width != w)
+        || (buffer->x_image->height != h);
+
+
+    if (buffer->use_shm)
+    {
+        if (!needs_to_resize || w <= 0 || h <= 0) {
+            // swap buffers
+            buffer->shm_index = !buffer->shm_index;
+            buffer->x_image = buffer->shm_image[buffer->shm_index];
+            return;
+        }
+        if (shm_prepare_(buffer, dpy, w, h)) {
+            buffer->x_image = buffer->shm_image[0];
+        } else {
+            fprintf(stderr, "xshm failed. falling back to copying images.\n");
+            buffer->use_shm = 0;
+        }
+    }
+
+    if (!needs_to_resize || w <= 0 || h <= 0) {
+        return;
+    }
+
+    if (!buffer->use_shm) {
+        if (buffer->x_image) XDestroyImage(buffer->x_image);
+
+        CcBitmap b = {
+            .w = w,
+            .h = h
+        };
+        cc_bitmap_alloc(&b);
+        buffer->x_image = cc_bitmap_create_ximage(&b, dpy, buffer->x_visual);
+    }
+
+    if (!buffer->x_image) {
+        fprintf(stderr, "failed to make ximage buffer");
+        exit(1);
+    }
+
+    assert(buffer->x_image->width == w);
+    assert(buffer->x_image->height == h);
 }
 
 void ui_refresh_drawing(int clear)
@@ -552,43 +552,25 @@ void ui_refresh_drawing(int clear)
         update_scroll_();
     }
 
-    paint_composite(ctx);
+    int w = ctx->viewport.w;
+    int h = ctx->viewport.h;
 
-    const CcLayer* composite = ctx->layers + LAYER_COMPOSITE;
+    framebuffer_prepare_(buffer, dpy, w, h);
 
-    int w = composite->bitmap.w;
-    int h = composite->bitmap.h;
-   
-    if (buffer->use_shm)
-    {
-        int result = shm_prepare_(buffer, dpy, composite);
+    CcBitmap b = {
+        .w = w,
+        .h = h,
+        .data = (CcPixel *)buffer->x_image->data
+    };
+    paint_composite(ctx, &b);
+    cc_bitmap_swap_for_xvisual(&b, &buffer->x_visual_info);
 
-        if (result)
-        {
+    if (buffer->use_shm) {
 #ifdef FEATURE_SHM
-            copy_bitmap_to_ximage_(buffer->shm_image, &composite->bitmap, &buffer->x_visual_info);
-            XShmPutImage(dpy, window, buffer->x_gc, buffer->shm_image, 0, 0, 0, 0, w, h, 0);
-#else
-			assert(0);
+        XShmPutImage(dpy, window, buffer->x_gc, buffer->x_image, 0, 0, 0, 0, w, h, 0);
 #endif
-        }
-        else
-        {
-            fprintf(stderr, "xshm failed. falling back to copying images.\n");
-            buffer->use_shm = 0;
-        }
-    }
-  
-    // not an else case.
-    if (!buffer->use_shm) {
-        // The Ximages are created on resize, and then we manipulate the data buffer the image refers to.
-        // I believe this fits the protocol and only XPutImage triggers an upload to the XServer.
-        // However, it's possible to imagine an optimization where the server caches the image.
-        // Based on my reading of FreeDesktop this is not the case.
-        double_buffer_prepare_(buffer, dpy, composite);
-        copy_bitmap_to_ximage_(buffer->x_images[buffer->x_index], &composite->bitmap, &buffer->x_visual_info);
-        XPutImage(dpy, window, buffer->x_gc, buffer->x_images[buffer->x_index], 0, 0, 0, 0, w, h);
-        buffer->x_index = !buffer->x_index;
+    } else {
+        XPutImage(dpy, window, buffer->x_gc, buffer->x_image, 0, 0, 0, 0, w, h);
     }
 
     if (ctx->active_layer == LAYER_OVERLAY)
@@ -663,9 +645,8 @@ void ui_drawing_cleanup(void)
         Display* dpy = XtDisplay(draw_area);
         DrawInfo* ctx = &g_draw_info;
         shm_destroy_image_(ctx, dpy);
-
-        for (int i = 0; i < 2; ++i) {
-            if (ctx->x_images[i]) XDestroyImage(ctx->x_images[i]);
+        if (ctx->x_image) {
+            XDestroyImage(ctx->x_image);
         }
     }
 }

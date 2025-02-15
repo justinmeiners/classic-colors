@@ -21,7 +21,7 @@ void write_(void* context, void* chunk_data, int chunk_size)
     size_t required = ctx->size + chunk_size;
     if (required > ctx->capacity)
     {
-        ctx->capacity = required * 2;
+        ctx->capacity = MAX(required * 2, 256);
         ctx->data = realloc(ctx->data, ctx->capacity);
     }
     memcpy(ctx->data + ctx->size, chunk_data, chunk_size);
@@ -46,10 +46,7 @@ unsigned char* cc_bitmap_compress(const CcBitmap* b, size_t* out_size)
 {
     assert(b);
 
-    CompressContext ctx;
-    ctx.size = 0;
-    ctx.capacity = 256;
-    ctx.data = malloc(ctx.capacity);
+    CompressContext ctx = { 0 };
 
     size_t stride = b->w * sizeof(CcPixel);
     stbi_write_png_compression_level = 5;

@@ -34,7 +34,7 @@ Widget g_main_w = NULL;
 XtAppContext g_app = NULL;
 int g_ready = 0;
 
-
+static
 Widget about_dialog = NULL;
 
 static void about_destroy_()

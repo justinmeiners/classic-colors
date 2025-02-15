@@ -63,6 +63,7 @@ void cc_layer_stretch(CcLayer* layer, int w, int h, int w_angle, int h_angle, ui
 void cc_layer_resize(CcLayer* layer, int new_w, int new_h, uint32_t bg_color);
 void cc_layer_ensure_size(CcLayer* layer, int w, int h);
 
+#define CC_TEXT_STRING_MAX 8192
 
 typedef struct
 {
@@ -75,8 +76,7 @@ typedef struct
     CcTextAlign font_align;
     uint32_t font_color;
 
-    size_t text_buffer_size;
-    wchar_t* text;
+    wchar_t text[CC_TEXT_STRING_MAX];
 } CcText;
 
 void cc_text_set_string(CcText *text, const wchar_t* string);
