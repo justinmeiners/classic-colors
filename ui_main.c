@@ -174,9 +174,9 @@ void ui_refresh_title(void)
     const char* path = paint_file_path(&g_paint_ctx);
     if (path)
     {
-        char* copy = strndup(path, OS_PATH_MAX);
-        snprintf(title, OS_PATH_MAX, "%s - Classic Colors", basename(copy));
-        free(copy);
+        char temp_path[OS_PATH_MAX];
+        strncpy(temp_path, path, OS_PATH_MAX);
+        snprintf(title, OS_PATH_MAX, "%s - Classic Colors", basename(temp_path));
     }
     else
     {

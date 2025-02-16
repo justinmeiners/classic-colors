@@ -120,9 +120,9 @@ static Widget setup_open_dialog_(Widget parent)
     const char* path = paint_file_path(&g_paint_ctx);
     if (path)
     {
-        char* copy = strndup(path, OS_PATH_MAX);
-        XtVaSetValues(dialog, XnNdirectory, dirname(copy), NULL);
-        free(copy);
+        char temp_path[OS_PATH_MAX];
+        strncpy(temp_path, path, OS_PATH_MAX);
+        XtVaSetValues(dialog, XnNdirectory, dirname(temp_path), NULL);
     }
  
     return dialog;
