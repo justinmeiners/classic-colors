@@ -147,7 +147,7 @@ static void cb_help_menu_(Widget widget, XtPointer a, XtPointer call_data)
     {
         case 0:
         {
-            open_url_("/usr/local/share/classic-colors/help/classic-colors_help-en.html");
+            open_url_("file:///usr/local/share/classic-colors/help/classic-colors_help-en.html");
             break;
         }
         case 1:
